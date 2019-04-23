@@ -1,0 +1,33 @@
+---
+# YUM repository installation method
+
+#
+# Configure YUM repository
+#
+- name: install | Configure ZIMon YUM repository
+  yum_repository:
+    name: spectrum-scale-zimon
+    description: IBM Spectrum Scale (ZIMon)
+    baseurl: "{{ scale_install_zimon_repository_url }}"
+    gpgcheck: false
+    state: present
+  notify: yum-clean-metadata
+  when:
+    - ansible_pkg_mgr == 'yum'
+    - scale_install_zimon_repository_url != 'existing'
+
+#
+# Add GUI RPMs
+#
+- name: install | Add GUI sensors RPMs to list
+  set_fact:
+    scale_install_all_rpms: "{{ scale_install_all_rpms + [ item ] }}"
+  with_items:
+    - "{{ scale_gui_sensors_rpms }}"
+
+- name: install | Add GUI collector RPMs to list
+  set_fact:
+    scale_install_all_rpms: "{{ scale_install_all_rpms + [ item ] }}"
+  with_items:
+    - "{{ scale_gui_collector_rpms }}"
+  when: scale_gui_collector

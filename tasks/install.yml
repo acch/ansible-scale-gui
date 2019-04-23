@@ -1,0 +1,35 @@
+---
+# Install or update RPMs
+
+#
+# Ensure that installation method was chosen during previous role
+#
+- block:  ## run_once: true
+    - name: install | Check installation method
+      assert:
+        that: scale_installmethod is defined
+        msg: >-
+          Please set the appropriate variable 'scale_install_*' for your desired
+          installation method!
+  run_once: true
+  delegate_to: localhost
+
+#
+# Run chosen installation method to get list of RPMs
+#
+- name: install | Initialize list of RPMs
+  set_fact:
+    scale_install_all_rpms: []
+
+- include_tasks: install_{{ scale_installmethod }}.yml
+
+- meta: flush_handlers
+
+#
+# Install or update RPMs
+#
+- name: install | Install GPFS GUI RPMs
+  yum:
+    name: "{{ scale_install_all_rpms }}"
+    state: present
+  when: ansible_pkg_mgr == 'yum'

@@ -1,0 +1,9 @@
+---
+# Configure systemd service
+
+- name: configure | Start and enable GUI service
+  service:
+    name: gpfsgui
+    state: started
+    enabled: yes
+  when: scale_gui_collector

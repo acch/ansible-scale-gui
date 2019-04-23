@@ -1,0 +1,26 @@
+---
+galaxy_info:
+  role_name: spectrum_scale_gui
+  author: Achim Christ
+  description: Role for installing and configuring IBM Spectrum Scale (GPFS) Graphical User Interface (GUI)
+  company: IBM
+  license: MIT
+  min_ansible_version: 2.4
+
+  platforms:
+    - name: EL
+      versions:
+        - 7
+
+  galaxy_tags:
+    - ibm
+    - spectrum
+    - scale
+    - gpfs
+    - graphical
+    - interface
+    - gui
+
+dependencies:
+# - acch.spectrum_scale
+  - ansible-scale
