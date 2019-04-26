@@ -5,5 +5,5 @@
   service:
     name: gpfsgui
     state: started
-    enabled: yes
+    enabled: true
   when: scale_gui_collector
