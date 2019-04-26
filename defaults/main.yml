@@ -13,11 +13,11 @@ scale_install_zimon_repository_url: http://infraserv/zimon_rpms/
 ## List of RPMs to install on GUI collector nodes
 scale_gui_collector_rpms:
   - gpfs.gui-{{ scale_rpmversion }}.noarch
-  - gpfs.gss.pmcollector.{{ scale_architecture }}
+  - gpfs.gss.pmcollector-{{ scale_rpmversion }}.{{ scale_architecture }}
 
 ## List of RPMs to install on all nodes
 scale_gui_sensors_rpms:
-  - gpfs.gss.pmsensors.{{ scale_architecture }}
+  - gpfs.gss.pmsensors-{{ scale_rpmversion }}.{{ scale_architecture }}
 
 ## Node's default GUI collector role -
 ## you'll likely want to define per-node roles in your inventory
