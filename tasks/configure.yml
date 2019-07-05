@@ -1,9 +1,55 @@
 ---
-# Configure systemd service
+# Configure GUI service and performance collection
 
+# Make default variables available in hostvars
+- name: cluster | Set default collector role
+  set_fact:
+    scale_gui_collector: "{{ scale_gui_collector }}"
+  when: hostvars[inventory_hostname].scale_gui_collector is undefined
+
+#
+# Inspect inventory
+#
+- name: configure | Find collector nodes
+  add_host:
+    name: "{{ item }}"
+    groups: scale_gui_collectors
+  when: hostvars[item].scale_gui_collector | bool
+  with_items: "{{ ansible_play_hosts }}"
+  changed_when: false
+
+#
+# Install and configure GUI service and performance collection
+#
 - name: configure | Start and enable GUI service
   service:
     name: gpfsgui
     state: started
     enabled: true
-  when: scale_gui_collector
+  when: scale_gui_collector | bool
+
+# TODO: check if config already exists
+- name: configure | Initialize performance collection
+  vars:
+    collector_nodes: "{{ groups['scale_gui_collectors'] | map('extract', hostvars, 'scale_daemon_nodename') | list }}"
+  command: /usr/lpp/mmfs/bin/mmperfmon config generate --collectors {{ collector_nodes | join(',') }}
+  run_once: true
+
+- name: configure | Enable nodes for performance collection
+  vars:
+    sensor_nodes: "{{ ansible_play_hosts | map('extract', hostvars, 'scale_daemon_nodename') | list }}"
+  command: /usr/lpp/mmfs/bin/mmchnode --perfmon -N {{ sensor_nodes | join(',') }}
+  run_once: true
+
+- name: configure | Start and enable collector service
+  service:
+    name: pmcollector
+    state: started
+    enabled: true
+  when: scale_gui_collector | bool
+
+- name: configure | Start and enable sensors service
+  service:
+    name: pmsensors
+    state: started
+    enabled: true

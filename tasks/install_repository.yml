@@ -30,4 +30,4 @@
     scale_install_all_rpms: "{{ scale_install_all_rpms + [ item ] }}"
   with_items:
     - "{{ scale_gui_collector_rpms }}"
-  when: scale_gui_collector
+  when: scale_gui_collector | bool
