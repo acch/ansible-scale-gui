@@ -15,6 +15,11 @@ scale_gui_collector_rpms:
   - gpfs.gui-{{ scale_rpmversion }}.noarch
   - gpfs.java-{{ scale_rpmversion }}.{{ scale_architecture }}
   - gpfs.gss.pmcollector-{{ scale_rpmversion }}.el{{ ansible_distribution_major_version }}.{{ scale_architecture }}
+  - gpfs.callhome-{{ scale_rpmversion }}.el{{ ansible_distribution_major_version }}.noarch
+
+## Install Callhome rpms on CallHome nodes. ##todo have separate installer?
+#scale_gui_callhome_rpms:
+#  - gpfs.callhome-{{ scale_rpmversion }}.el{{ ansible_distribution_major_version }}.{{ scale_architecture }}
 
 ## List of RPMs to install on all nodes
 scale_gui_sensors_rpms:
@@ -23,3 +28,49 @@ scale_gui_sensors_rpms:
 ## Node's default GUI collector role -
 ## you'll likely want to define per-node roles in your inventory
 scale_gui_collector: false
+
+## Node's default GUI collector settings
+scale_gui_GPFSDiskCap_period: '3600'
+
+## Default Spectrum Scale GUI Admin password.
+## you'll likely want to define per-node roles in your inventory
+scale_gui_admin_password: Admin@GUI
+
+## Enable Callhome to IBM
+## you'll likely want to define per-node roles in your inventory
+scale_gui_callhome: false
+
+## Default CallHome Information.
+## you'll likely want to define in your group
+scale_gui_callhome_customer_name: 'ACME'
+scale_gui_callhome_customer_id: 'ACMECUSTOMERID'
+scale_gui_callhome_country_code: 'NO'
+scale_gui_callhome_email: 'acme@acme.com'
+#scale_gui_callhome_schedule: daily,weekly #TODO is using auto now.
+
+#Customer-name Supported characters are: "  "['a-z','A-Z','0-9','-','_','.',' ',',']")
+#Customer-id Supported characters are:  "['a-z','A-Z','0-9','-','_','.']")
+#E-mail address. Example: abc" "@ibm.com
+#The country name must" " be in the alpha-2 code format. For " "example, IN, US"
+#Proxy location Supported characters are:  "['a-z','A-Z','0-9','-','_','.',' ',',']")
+
+
+
+## Enable Active Directory Integration og GUI
+scale_gui_ldap_integration: false
+
+##  Active Directory information for User Autenticated Scale GUI
+##  you'll likely want to define in your inventory
+scale_gui_ad_name: myad
+scale_gui_ldap_host: LBS-AD01.LBS.loc
+scale_gui_bindDn: CN=servicebind,CN=Users,DC=LBS,DC=loc
+scale_gui_bindPassword: IBM2013ok
+scale_gui_baseDn: CN=Users,DC=LBS,DC=loc
+scale_gui_keystore: /tmp/ad.jks #not needed if no secure AD.
+
+## Default Mapping of Active Directory Groups to Security Groups:
+##you'll likely want to define in your groups.
+scale_gui_groups_securityadmin: scale-administrator
+scale_gui_groups_storageadmin: scale-storage-administrator
+scale_gui_groups_snapadmin: scale-snapshot-administrator
+scale_gui_groups_data_access: scale-data-access

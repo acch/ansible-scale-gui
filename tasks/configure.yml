@@ -29,10 +29,33 @@
   when: scale_gui_collector | bool
 
 # TODO: check if config already exists
+# TODO: Ole Kristian: added a fail_when to check for output, but are having problems using the {{ collector_nodes | join(',') }} for when.
+- name: configure | check if Initialize performance collection is already configured.
+  shell: "mmperfmon config show | grep colCandidates"
+  register: conf_pmcollector_check
+  delegate_to: "{{ play_hosts | first }}"
+  ignore_errors: yes
+  when:
+    - scale_gui_collector | bool
+
+- name: configure | check if Initialize performance collection is already configured - Output
+  register: conf_pmcollector_check
+  delegate_to: "{{ play_hosts | first }}"
+  debug:
+    msg: "{{ conf_pmcollector_check.stdout.split('\n') }}"
+  ignore_errors: yes
+  when:
+    - scale_gui_collector | bool
+
 - name: configure | Initialize performance collection
   vars:
     collector_nodes: "{{ groups['scale_gui_collectors'] | map('extract', hostvars, 'scale_daemon_nodename') | list }}"
   command: /usr/lpp/mmfs/bin/mmperfmon config generate --collectors {{ collector_nodes | join(',') }}
+  register: conf_pmcollector
+  when:
+    - scale_gui_collector | bool
+#" '{{ collector_nodes | join(',') }}.lbs.loc' not in conf_callhome_check.stdout"
+  failed_when: "conf_pmcollector.rc != 0 and 'mmperfmon: This performance monitoring configuration already exists' not in conf_pmcollector.stderr"
   run_once: true
 
 - name: configure | Enable nodes for performance collection
@@ -53,3 +76,155 @@
     name: pmsensors
     state: started
     enabled: true
+
+- name: configure | Init GUI
+  command: /usr/lpp/mmfs/gui/cli/initgui
+  register: conf_initgui
+  failed_when: "conf_initgui.rc != 0 and 'EFSSG1000I The command completed successfully.' not in conf_callhome_group.stdout"
+  run_once: True
+  when: scale_gui_collector | bool
+
+- name:  configure | Perfmon config update for GPFSDiskCap
+  command: /usr/lpp/mmfs/bin/mmperfmon config update GPFSDiskCap.period="{{ scale_gui_GPFSDiskCap_period }}" GPFSDiskCap.restrict={{ collector_nodes | first }}
+  run_once: True
+  delegate_to: "{{ play_hosts | first }}"
+  ignore_errors: yes
+  when: scale_gui_collector | bool
+
+- name: configure | Create local GUI admin user.
+  shell: |
+    /usr/lpp/mmfs/gui/cli/mkuser admin -g SecurityAdmin,SystemAdmin -p "{{ scale_gui_admin_password }}"
+  run_once: True
+  delegate_to: "{{ play_hosts | first }}"
+  register: conf_createadmin
+  failed_when: "conf_createadmin.rc != 0 and 'The value \"admin\" specified for \"userID\" is already in use.' not in conf_createadmin.stderr"
+  ignore_errors: yes
+  when: scale_gui_collector | bool
+
+#
+# Configure Callhome service
+#
+
+- name: configure | Check if Callhome is enabled
+  shell: "/usr/lpp/mmfs/bin/mmcallhome capability list -Y |grep -v HEADER | cut -d ':' -f 9"
+  register: conf_callhome_check
+  delegate_to: "{{ play_hosts | first }}"
+  ignore_errors: yes
+  when:
+    - scale_gui_collector | bool
+    - scale_gui_callhome | bool
+
+- block: #When callhome is not enabled
+    - name: configure | Check if Callhome is enabled - output
+      run_once: True
+      delegate_to: "{{ play_hosts | first }}"
+      debug:
+        msg: "{{ conf_callhome_check.stdout }}"
+      when:
+        - scale_gui_collector | bool
+        - scale_gui_callhome | bool
+
+    - name: configure | Call Home information
+      command: /usr/lpp/mmfs/bin/mmcallhome info change --customer-name "{{ scale_gui_callhome_customer_name }}" --customer-id "{{ scale_gui_callhome_customer_id }}" --country-code "{{ scale_gui_callhome_country_code }}" --email "{{ scale_gui_callhome_email }}"
+      run_once: True
+      delegate_to: "{{ play_hosts | first }}"
+      ignore_errors: yes
+      when:
+        - scale_gui_collector | bool
+        - scale_gui_callhome | bool
+
+    - name: configure | Call Home group
+      command: /usr/lpp/mmfs/bin/mmcallhome group auto --server '{{ play_hosts | first }}' --enable ACCEPT --force
+      register: conf_callhome_group
+      failed_when: "conf_callhome_group.rc != 0 and 'The automatic group creation completed successfully' and 'Call home enabled has been set to true' not in conf_callhome_group.stdout"
+      when:
+        - scale_gui_collector | bool
+        - scale_gui_callhome | bool
+
+    - name: configure | Enable Call Home   #TODO  dobbel up of enable?
+      command: /usr/lpp/mmfs/bin/mmcallhome capability enable accept
+      register: conf_callhome_enable
+      failed_when: "conf_callhome_enable.rc != 0 and 'Call home enabled has been set to true' not in conf_callhome_enable.stdout"
+      when:
+        - scale_gui_collector | bool
+        - scale_gui_callhome | bool
+
+    - name: configure | Test callhome connection
+      command: /usr/lpp/mmfs/bin/mmcallhome test connection
+      register: conf_callhome_test
+      failed_when: "conf_callhome_test.rc != 0 and 'OK' not in conf_callhome_test.stdout"
+      when:
+        - scale_gui_collector | bool
+        - scale_gui_callhome | bool
+
+  when: " 'enabled' not in conf_callhome_check.stdout"
+
+#
+# Install and configure LDAP User autentication for Spectrum Scale GUI
+#
+
+- name: config | Verify if GUI is allready ldap integrated.
+  shell: /usr/lpp/mmfs/gui/cli/lsldap -filter
+  #shell: /usr/lpp/mmfs/gui/cli/lsldap -filter -Y | grep -v HEADER | cut -d ':' -f 7 ##Dont have any Output.
+  register: conf_lsldap
+  run_once: True
+  delegate_to: "{{ play_hosts | first }}"
+  ignore_errors: yes
+  when:
+    - scale_gui_collector | bool
+    - scale_gui_ldap_integration | bool
+
+- name: config | Verify if GUI is allready ldap integrated - Output
+  run_once: True
+  delegate_to: "{{ play_hosts | first }}"
+  debug:
+    msg: "{{ conf_lsldap.stdout.split('\n') }}"
+  when:
+    - scale_gui_collector | bool
+    - scale_gui_ldap_integration | bool
+
+- name: config | LDAP Integrate GUI #Binds to LDAP / AD - No Secure AD without keystore. may also need to use ansible vault for password
+  shell: |
+    /usr/lpp/mmfs/gui/cli/mkldap "{{ scale_gui_ad_name }}" --host "{{ scale_gui_ldap_host }}" --bindDn "{{ scale_gui_bindDn }}" --bindPassword "{{ scale_gui_bindPassword }}" --baseDn "{{ scale_gui_baseDn }}"
+  environment:
+    JAVA_HOME: /usr/lpp/mmfs/java/jre
+  run_once: True
+  delegate_to: "{{ play_hosts | first }}"
+  ignore_errors: yes
+  when:
+    - scale_gui_collector | bool
+    - scale_gui_ldap_integration | bool
+    - " 'EFSSG0100I There are no values to return' in conf_lsldap.stdout "
+
+- name: config | Verify if GUI have created user groups and roles for LDAP #TODO check for group from variable instead, only checks scale-
+  shell: /usr/lpp/mmfs/gui/cli/lsusergrp -Y | grep scale | cut -d ':' -f 7
+  register: conf_lsusergrp
+  delegate_to: "{{ play_hosts | first }}"
+  when:
+    - scale_gui_collector | bool
+    - scale_gui_ldap_integration | bool
+
+- name: config | Verify if GUI have created user groups and roles for LDAP - output
+  run_once: True
+  delegate_to: "{{ play_hosts | first }}"
+  debug:
+    msg: "{{ conf_lsusergrp.stdout.split('\n') }}"
+  when:
+    - scale_gui_collector | bool
+    - scale_gui_ldap_integration | bool
+
+- name: config | Map a basic set of roles to LDAP groups  #TODO: Make Loop instead?)
+  shell: |
+    /usr/lpp/mmfs/gui/cli/mkusergrp "{{ scale_gui_groups_securityadmin }}" --role securityadmin
+    /usr/lpp/mmfs/gui/cli/mkusergrp "{{ scale_gui_groups_storageadmin }}" --role storageadmin
+    /usr/lpp/mmfs/gui/cli/mkusergrp "{{ scale_gui_groups_snapadmin }}" --role snapadmin
+    /usr/lpp/mmfs/gui/cli/mkusergrp "{{ scale_gui_groups_data_access }}" --role dataaccess
+  environment:
+    JAVA_HOME: /usr/lpp/mmfs/java/jre
+  run_once: True
+  delegate_to: "{{ play_hosts | first }}"
+  ignore_errors: yes
+  when:
+    - scale_gui_collector | bool
+    - scale_gui_ldap_integration | bool
+    - " 'scale-' not in conf_lsusergrp.stdout"
