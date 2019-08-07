@@ -85,7 +85,9 @@
   when: scale_gui_collector | bool
 
 - name:  configure | Perfmon config update for GPFSDiskCap
-  command: /usr/lpp/mmfs/bin/mmperfmon config update GPFSDiskCap.period="{{ scale_gui_GPFSDiskCap_period }}" GPFSDiskCap.restrict={{ collector_nodes | first }}
+  vars:
+    collector_nodes: "{{ groups['scale_gui_collectors'] | map('extract', hostvars, 'scale_daemon_nodename') | list }}"
+  command: /usr/lpp/mmfs/bin/mmperfmon config update GPFSDiskCap.period="{{ scale_gui_GPFSDiskCap_period }}" GPFSDiskCap.restrict="{{ collector_nodes | first }}"
   run_once: True
   delegate_to: "{{ play_hosts | first }}"
   ignore_errors: yes
