@@ -84,24 +84,42 @@
   run_once: True
   when: scale_gui_collector | bool
 
-- name:  configure | Perfmon config update for GPFSDiskCap
-  vars:
-    collector_nodes: "{{ groups['scale_gui_collectors'] | map('extract', hostvars, 'scale_daemon_nodename') | list }}"
-  command: /usr/lpp/mmfs/bin/mmperfmon config update GPFSDiskCap.period="{{ scale_gui_GPFSDiskCap_period }}" GPFSDiskCap.restrict="{{ collector_nodes | first }}"
+#- name:  configure | Perfmon config update for GPFSDiskCap ##TODO maybe old information?? see that we can restrict to 1 node now.
+#  vars:
+#    collector_nodes: "{{ groups['scale_gui_collectors'] | map('extract', hostvars, 'scale_daemon_nodename') | list }}"
+#  command: /usr/lpp/mmfs/bin/mmperfmon config update GPFSDiskCap.period="{{ scale_gui_GPFSDiskCap_period }}" GPFSDiskCap.restrict="{{ collector_nodes | first }}"
+#  mmperfmon config update 'GPFSDiskCap.period=86400' 'GPFSDiskCap.restrict=@CLUSTER_PERF_SENSOR'
+#  run_once: True
+#  delegate_to: "{{ play_hosts | first }}"
+#  ignore_errors: yes
+#  when: scale_gui_collector | bool
+
+- name: configure | Check if local admin GUI user i created
+  shell: /usr/lpp/mmfs/gui/cli/lsuser -Y | grep -v HEADER | cut -d ':' -f 7
+  register: conf_gui_admin_check
+  delegate_to: "{{ play_hosts | first }}"
+  when:
+    - scale_gui_collector | bool
+
+- name: configure | Check if local admin GUI user i Created - output
   run_once: True
   delegate_to: "{{ play_hosts | first }}"
-  ignore_errors: yes
-  when: scale_gui_collector | bool
+  debug:
+    msg: "{{ conf_gui_admin_check.stdout.split('\n') }}"
+  when:
+    - scale_gui_collector | bool
 
 - name: configure | Create local GUI admin user.
-  shell: |
-    /usr/lpp/mmfs/gui/cli/mkuser admin -g SecurityAdmin,SystemAdmin -p "{{ scale_gui_admin_password }}"
+  shell: /usr/lpp/mmfs/gui/cli/mkuser admin -g SecurityAdmin,SystemAdmin -p "{{ scale_gui_admin_password }}"
   run_once: True
   delegate_to: "{{ play_hosts | first }}"
   register: conf_createadmin
-  failed_when: "conf_createadmin.rc != 0 and 'The value \"admin\" specified for \"userID\" is already in use.' not in conf_createadmin.stderr"
+  failed_when: "conf_createadmin.rc != 0 and 'EFSSG0019I The user admin has been successfully created.' not in conf_createadmin.stdout"
   ignore_errors: yes
-  when: scale_gui_collector | bool
+  when:
+    - scale_gui_collector | bool
+    - " 'admin' not in conf_gui_admin_check.stdout"
+
 
 #
 # Configure Callhome service
