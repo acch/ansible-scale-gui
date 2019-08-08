@@ -28,24 +28,34 @@
     enabled: true
   when: scale_gui_collector | bool
 
-# TODO: check if config already exists
-# TODO: Ole Kristian: added a fail_when to check for output, but are having problems using the {{ collector_nodes | join(',') }} for when.
-- name: configure | check if Initialize performance collection is already configured.
+#TODO: Ole Kristian: added a check for output, but are having problems using the ( collector_nodes | join(',') )
+
+- name: configure | Check if initialize performance collection is already configured.
   shell: "mmperfmon config show | grep colCandidates"
   register: conf_pmcollector_check
-  delegate_to: "{{ play_hosts | first }}"
-  ignore_errors: yes
+  run_once: true
+  failed_when: false
+  changed_when: false
   when:
     - scale_gui_collector | bool
 
-- name: configure | check if Initialize performance collection is already configured - Output
-  register: conf_pmcollector_check
+- name: configure | Check if initialize performance collection is already configured - Output stdout
   delegate_to: "{{ play_hosts | first }}"
+  run_once: true
   debug:
-    msg: "{{ conf_pmcollector_check.stdout.split('\n') }}"
-  ignore_errors: yes
+    msg: "{{ conf_pmcollector_check.stdout }}"
   when:
     - scale_gui_collector | bool
+    - scale_gui_ansible_task_output | bool
+
+- name: configure | Check if initialize performance collection is already configured - Output stderr
+  delegate_to: "{{ play_hosts | first }}"
+  run_once: true
+  debug:
+    msg: "{{ conf_pmcollector_check.stderr }}"
+  when:
+    - scale_gui_collector | bool
+    - scale_gui_ansible_task_output | bool
 
 - name: configure | Initialize performance collection
   vars:
@@ -54,15 +64,40 @@
   register: conf_pmcollector
   when:
     - scale_gui_collector | bool
-#" '{{ collector_nodes | join(',') }}.lbs.loc' not in conf_callhome_check.stdout"
+    - " 'mmperfmon: There is no performance monitoring configuration data.' in conf_pmcollector_check.stderr"
+#- " ( collector_nodes | join(',') ) not in conf_callhome_check.stdout"
   failed_when: "conf_pmcollector.rc != 0 and 'mmperfmon: This performance monitoring configuration already exists' not in conf_pmcollector.stderr"
   run_once: true
+
+#
+# PERFMON
+#
+- name: configure | Check before enable nodes for performance collection #TODO only check first node for perfmon.
+  vars:
+    sensor_nodes: "{{ ansible_play_hosts | map('extract', hostvars, 'scale_daemon_nodename') | list }}"
+  shell: "mmlscluster -Y | grep -v HEADER | grep clusterNode |grep {{ sensor_nodes | first }} | cut -d ':' -f 14"
+  register: conf_perfmon_check
+  run_once: true
+  failed_when: false
+  changed_when: false
+
+- name: configure | Check before enable nodes for performance collection - Output stdout
+  delegate_to: "{{ play_hosts | first }}"
+  run_once: true
+  debug:
+    msg: "{{ conf_perfmon_check.stdout }}"
+  when:
+    - scale_gui_ansible_task_output | bool
 
 - name: configure | Enable nodes for performance collection
   vars:
     sensor_nodes: "{{ ansible_play_hosts | map('extract', hostvars, 'scale_daemon_nodename') | list }}"
   command: /usr/lpp/mmfs/bin/mmchnode --perfmon -N {{ sensor_nodes | join(',') }}
+  register: conf_enable_node_perfmon
   run_once: true
+  failed_when: " 'mmsdrfs propagation completed.' not in conf_enable_node_perfmon.stdout"
+  when:
+    - " 'perfmon' not in conf_perfmon_check.stdout"
 
 - name: configure | Start and enable collector service
   service:
@@ -84,67 +119,104 @@
   run_once: True
   when: scale_gui_collector | bool
 
-#- name:  configure | Perfmon config update for GPFSDiskCap ##TODO maybe old information?? see that we can restrict to 1 node now.
-#  vars:
-#    collector_nodes: "{{ groups['scale_gui_collectors'] | map('extract', hostvars, 'scale_daemon_nodename') | list }}"
-#  command: /usr/lpp/mmfs/bin/mmperfmon config update GPFSDiskCap.period="{{ scale_gui_GPFSDiskCap_period }}" GPFSDiskCap.restrict="{{ collector_nodes | first }}"
-#  mmperfmon config update 'GPFSDiskCap.period=86400' 'GPFSDiskCap.restrict=@CLUSTER_PERF_SENSOR'
-#  run_once: True
-#  delegate_to: "{{ play_hosts | first }}"
-#  ignore_errors: yes
-#  when: scale_gui_collector | bool
+#
+# Create Local GUI Admin User
+#
 
-- name: configure | Check if local admin GUI user i created
+- name: configure | Check if local admin GUI user is created
   shell: /usr/lpp/mmfs/gui/cli/lsuser -Y | grep -v HEADER | cut -d ':' -f 7
   register: conf_gui_admin_check
   delegate_to: "{{ play_hosts | first }}"
+  failed_when: false
+  changed_when: false
   when:
     - scale_gui_collector | bool
+    - scale_gui_admin | bool
 
-- name: configure | Check if local admin GUI user i Created - output
+- name: configure | Check if local admin GUI user is created - output
   run_once: True
   delegate_to: "{{ play_hosts | first }}"
   debug:
     msg: "{{ conf_gui_admin_check.stdout.split('\n') }}"
   when:
     - scale_gui_collector | bool
+    - scale_gui_admin | bool
+    - scale_gui_ansible_task_output | bool
 
-- name: configure | Create local GUI admin user.
-  shell: /usr/lpp/mmfs/gui/cli/mkuser admin -g SecurityAdmin,SystemAdmin -p "{{ scale_gui_admin_password }}"
+- name: configure | Create local GUI admin user
+  shell: /usr/lpp/mmfs/gui/cli/mkuser "{{ scale_gui_admin_user }}" -g "{{ scale_gui_admin_role }}" -p "{{ scale_gui_admin_password }}"
   run_once: True
   delegate_to: "{{ play_hosts | first }}"
   register: conf_createadmin
-  failed_when: "conf_createadmin.rc != 0 and 'EFSSG0019I The user admin has been successfully created.' not in conf_createadmin.stdout"
+  failed_when: "conf_createadmin.rc != 0 and 'has been successfully created.' not in conf_createadmin.stdout"
   ignore_errors: yes
   when:
     - scale_gui_collector | bool
-    - " 'admin' not in conf_gui_admin_check.stdout"
+    - scale_gui_admin | bool
+    - " ( scale_gui_admin_user ) not in conf_gui_admin_check.stdout"
+#
+# Create Extra Local GUI user - Example: SEC and RestAPI - #TODO Created from user list insted?
+#
 
+- name: configure | Check if local user for GUI is created
+  shell: /usr/lpp/mmfs/gui/cli/lsuser -Y | grep -v HEADER | cut -d ':' -f 7
+  register: conf_gui_user_check
+  delegate_to: "{{ play_hosts | first }}"
+  failed_when: false
+  changed_when: false
+  when:
+    - scale_gui_collector | bool
+    - scale_gui_user | bool
+
+- name: configure | Check if local user for GUI is created - output
+  run_once: True
+  delegate_to: "{{ play_hosts | first }}"
+  debug:
+    msg: "{{ conf_gui_user_check.stdout.split('\n') }}"
+  when:
+    - scale_gui_collector | bool
+    - scale_gui_user | bool
+    - scale_gui_ansible_task_output | bool
+
+- name: configure | Create local User for GUI.
+  shell: /usr/lpp/mmfs/gui/cli/mkuser "{{ scale_gui_user_username }}" -g "{{ scale_gui_user_role }}" -p "{{ scale_gui_user_password }}"
+  run_once: True
+  delegate_to: "{{ play_hosts | first }}"
+  register: conf_create_gui_user
+  failed_when: "conf_create_gui_user.rc != 0 and 'has been successfully created.' not in conf_create_gui_user.stdout"
+  ignore_errors: yes
+  when:
+    - scale_gui_collector | bool
+    - scale_gui_user | bool
+    - " ( scale_gui_user_username ) not in conf_gui_user_check.stdout"
 
 #
-# Configure Callhome service
+## Configure Callhome service
 #
 
 - name: configure | Check if Callhome is enabled
   shell: "/usr/lpp/mmfs/bin/mmcallhome capability list -Y |grep -v HEADER | cut -d ':' -f 9"
   register: conf_callhome_check
   delegate_to: "{{ play_hosts | first }}"
-  ignore_errors: yes
+  failed_when: false
+  changed_when: false
   when:
     - scale_gui_collector | bool
     - scale_gui_callhome | bool
 
-- block: #When callhome is not enabled
-    - name: configure | Check if Callhome is enabled - output
-      run_once: True
-      delegate_to: "{{ play_hosts | first }}"
-      debug:
-        msg: "{{ conf_callhome_check.stdout }}"
-      when:
-        - scale_gui_collector | bool
-        - scale_gui_callhome | bool
+- name: configure | Check if Callhome is enabled - output
+  run_once: True
+  delegate_to: "{{ play_hosts | first }}"
+  debug:
+     msg: "{{ conf_callhome_check.stdout }}"
+  when:
+    - scale_gui_collector | bool
+    - scale_gui_callhome | bool
+    - scale_gui_ansible_task_output | bool
 
-    - name: configure | Call Home information
+- block: #When callhome is not enabled
+
+    - name: configure | Call Home configure information
       command: /usr/lpp/mmfs/bin/mmcallhome info change --customer-name "{{ scale_gui_callhome_customer_name }}" --customer-id "{{ scale_gui_callhome_customer_id }}" --country-code "{{ scale_gui_callhome_country_code }}" --email "{{ scale_gui_callhome_email }}"
       run_once: True
       delegate_to: "{{ play_hosts | first }}"
@@ -153,7 +225,7 @@
         - scale_gui_collector | bool
         - scale_gui_callhome | bool
 
-    - name: configure | Call Home group
+    - name: configure | Call Home create group
       command: /usr/lpp/mmfs/bin/mmcallhome group auto --server '{{ play_hosts | first }}' --enable ACCEPT --force
       register: conf_callhome_group
       failed_when: "conf_callhome_group.rc != 0 and 'The automatic group creation completed successfully' and 'Call home enabled has been set to true' not in conf_callhome_group.stdout"
@@ -180,21 +252,21 @@
   when: " 'enabled' not in conf_callhome_check.stdout"
 
 #
-# Install and configure LDAP User autentication for Spectrum Scale GUI
+# Install and configure LDAP User authenticate for Spectrum Scale GUI
 #
 
-- name: config | Verify if GUI is allready ldap integrated.
+- name: config | Check if GUI is allready ldap integrated.
   shell: /usr/lpp/mmfs/gui/cli/lsldap -filter
-  #shell: /usr/lpp/mmfs/gui/cli/lsldap -filter -Y | grep -v HEADER | cut -d ':' -f 7 ##Dont have any Output.
   register: conf_lsldap
   run_once: True
+  failed_when: false
+  changed_when: false
   delegate_to: "{{ play_hosts | first }}"
-  ignore_errors: yes
   when:
     - scale_gui_collector | bool
     - scale_gui_ldap_integration | bool
 
-- name: config | Verify if GUI is allready ldap integrated - Output
+- name: config | Check if GUI is allready ldap integrated - Output
   run_once: True
   delegate_to: "{{ play_hosts | first }}"
   debug:
@@ -202,6 +274,7 @@
   when:
     - scale_gui_collector | bool
     - scale_gui_ldap_integration | bool
+    - scale_gui_ansible_task_output | bool
 
 - name: config | LDAP Integrate GUI #Binds to LDAP / AD - No Secure AD without keystore. may also need to use ansible vault for password
   shell: |
@@ -216,15 +289,17 @@
     - scale_gui_ldap_integration | bool
     - " 'EFSSG0100I There are no values to return' in conf_lsldap.stdout "
 
-- name: config | Verify if GUI have created user groups and roles for LDAP #TODO check for group from variable instead, only checks scale-
+- name: config | Check if GUI have created user groups and roles for LDAP #TODO check for group from variable instead, only checks scale-
   shell: /usr/lpp/mmfs/gui/cli/lsusergrp -Y | grep scale | cut -d ':' -f 7
   register: conf_lsusergrp
   delegate_to: "{{ play_hosts | first }}"
+  failed_when: false
+  changed_when: false
   when:
     - scale_gui_collector | bool
     - scale_gui_ldap_integration | bool
 
-- name: config | Verify if GUI have created user groups and roles for LDAP - output
+- name: config | Check if GUI have created user groups and roles for LDAP - output
   run_once: True
   delegate_to: "{{ play_hosts | first }}"
   debug:
@@ -232,6 +307,7 @@
   when:
     - scale_gui_collector | bool
     - scale_gui_ldap_integration | bool
+    - scale_gui_ansible_task_output | bool
 
 - name: config | Map a basic set of roles to LDAP groups  #TODO: Make Loop instead?)
   shell: |
@@ -248,3 +324,83 @@
     - scale_gui_collector | bool
     - scale_gui_ldap_integration | bool
     - " 'scale-' not in conf_lsusergrp.stdout"
+
+#
+# Configure E-mail notifications in Spectrum Scale GUI
+#
+
+- name: config | Check if e-mail notifications is allready enabled
+  command: /usr/lpp/mmfs/gui/cli/lsemailserver
+  register: conf_email_notifications_check
+  run_once: True
+  delegate_to: "{{ play_hosts | first }}"
+  failed_when: false
+  changed_when: false
+  when:
+    - scale_gui_collector | bool
+    - scale_gui_email_notification | bool
+
+- name: config | Verify if e-mail notifications is allready enabled - Output
+  run_once: True
+  delegate_to: "{{ play_hosts | first }}"
+  debug:
+    msg: "{{ conf_email_notifications_check.stdout}}"
+  when:
+    - scale_gui_collector | bool
+    - scale_gui_email_notification | bool
+    - scale_gui_ansible_task_output | bool
+
+- name: config | Configure E-Mail notifications
+  command: /usr/lpp/mmfs/gui/cli/mkemailserver SMTP_1 --address "{{ scale_gui_email_ip_adress }}" --port "{{ scale_gui_email_ip_port }}" --reply "{{ scale_gui_email_replay_email_address }}" --contact "{{ scale_gui_email_contact_name }}" --subject "{{ scale_gui_email_subject }}"  --login "{{ scale_gui_email_sender_login_id }}" --password "{{ scale_gui_email_password }}" --header "{{ scale_gui_email_headertext }}" --footer "{{ scale_gui_email_footertext }}"
+  register: conf_email_notifications
+  run_once: True
+  delegate_to: "{{ play_hosts | first }}"
+  failed_when: " 'EFSSG1000I The command completed successfully.' not in conf_email_notifications.stdout"
+  ignore_errors: yes
+  when:
+    - scale_gui_collector | bool
+    - scale_gui_email_notification | bool
+    - " 'EFSSG0100I There are no values to return' in conf_email_notifications_check.stdout"
+
+#
+# Configure SNMP notifications in Spectrum Scale GUI
+#
+
+- name: config | Check if SNMP notifications is allready enabled
+  command: /usr/lpp/mmfs/gui/cli/lssnmpserver
+  vars:
+    collector_nodes: "{{ groups['scale_gui_collectors'] | map('extract', hostvars, 'scale_daemon_nodename') | list }}"
+  register: conf_snmp_notifications_check
+  run_once: True
+  delegate_to: "{{ play_hosts | first }}"
+  failed_when: false
+  changed_when: false
+  when:
+    - scale_gui_collector | bool
+    - scale_gui_snmp_notification | bool
+
+- name: config | Check if SNMP notifications is allready enabled - Output
+  vars:
+    collector_nodes: "{{ groups['scale_gui_collectors'] | map('extract', hostvars, 'scale_daemon_nodename') | list }}"
+  run_once: True
+  delegate_to: "{{ play_hosts | first }}"
+  debug:
+    msg: "{{ conf_snmp_notifications_check.stdout}}"
+  when:
+    - scale_gui_collector | bool
+    - scale_gui_snmp_notification | bool
+    - scale_gui_ansible_task_output | bool
+
+- name: config | Configure SNMP notifications
+  vars:
+    collector_nodes: "{{ groups['scale_gui_collectors'] | map('extract', hostvars, 'scale_daemon_nodename') | list }}"
+  command: /usr/lpp/mmfs/gui/cli/mksnmpserver SNMP_1 --ip "{{ scale_gui_snmp_server_ip_adress }}" --port "{{ scale_gui_snmp_server_ip_port }}" --community "{{ scale_gui_snmp_server_community }}"
+  register: conf_snmp_notifications
+  run_once: True
+  delegate_to: "{{ play_hosts | first }}"
+  failed_when: " 'EFSSG1000I The command completed successfully.' not in conf_snmp_notifications.stdout"
+  ignore_errors: yes
+  when:
+    - scale_gui_collector | bool
+    - scale_gui_snmp_notification | bool
+    - " 'EFSSG0100I There are no values to return' in conf_snmp_notifications_check.stdout"

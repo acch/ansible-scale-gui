@@ -29,12 +29,23 @@ scale_gui_sensors_rpms:
 ## you'll likely want to define per-node roles in your inventory
 scale_gui_collector: false
 
-## Node's default GUI collector settings
-scale_gui_GPFSDiskCap_period: '3600'
+## Enabled output from Ansible task in stdout and stderr for some tasks.
+## this is handy for se output from changes and checks
+scale_gui_ansible_task_output: false
 
-## Default Spectrum Scale GUI Admin password.
+## Default Spectrum Scale GUI Admin.
 ## you'll likely want to define per-node roles in your inventory
-scale_gui_admin_password: Admin@GUI
+## For Secure environment, Store you password in Ansible Vault or Hasicorp Vault.
+scale_gui_admin: true
+scale_gui_admin_user: "admin"
+scale_gui_admin_password:
+scale_gui_admin_role: "SecurityAdmin,SystemAdmin"
+
+## Ekstra Spectrum Scale GUI user. example: Monitor or RestAPI.
+scale_gui_user: false
+scale_gui_user_username: 'SEC'
+scale_gui_user_role: 'SystemAdmin'
+scale_gui_user_password: 'Storage@Scale1'  #password policy
 
 ## Enable Callhome to IBM
 ## you'll likely want to define per-node roles in your inventory
@@ -48,29 +59,52 @@ scale_gui_callhome_country_code: 'NO'
 scale_gui_callhome_email: 'acme@acme.com'
 #scale_gui_callhome_schedule: daily,weekly #TODO is using auto now.
 
-#Customer-name Supported characters are: "  "['a-z','A-Z','0-9','-','_','.',' ',',']")
-#Customer-id Supported characters are:  "['a-z','A-Z','0-9','-','_','.']")
-#E-mail address. Example: abc" "@ibm.com
-#The country name must" " be in the alpha-2 code format. For " "example, IN, US"
-#Proxy location Supported characters are:  "['a-z','A-Z','0-9','-','_','.',' ',',']")
-
+## Customer-name Supported characters are: "  "['a-z','A-Z','0-9','-','_','.',' ',',']")
+## Customer-id Supported characters are:  "['a-z','A-Z','0-9','-','_','.']")
+## E-mail address. Example: abc" "@ibm.com
+## The country name must" " be in the alpha-2 code format. For " "example, IN, US"
+## Proxy location Supported characters are:  "['a-z','A-Z','0-9','-','_','.',' ',',']")
 
 
 ## Enable Active Directory Integration og GUI
 scale_gui_ldap_integration: false
 
-##  Active Directory information for User Autenticated Scale GUI
-##  you'll likely want to define in your inventory
+## Active Directory information for User Autenticated Scale GUI
+## you'll likely want to define in your inventory
 scale_gui_ad_name: myad
 scale_gui_ldap_host: LBS-AD01.LBS.loc
 scale_gui_bindDn: CN=servicebind,CN=Users,DC=LBS,DC=loc
-scale_gui_bindPassword: IBM2013ok
+scale_gui_bindPassword:
 scale_gui_baseDn: CN=Users,DC=LBS,DC=loc
-scale_gui_keystore: /tmp/ad.jks #not needed if no secure AD.
+#scale_gui_keystore: ##/tmp/ad.jks - local on GUI node - not needed if no secure AD.
 
 ## Default Mapping of Active Directory Groups to Security Groups:
-##you'll likely want to define in your groups.
+## you'll likely want to define in your groups.
 scale_gui_groups_securityadmin: scale-administrator
 scale_gui_groups_storageadmin: scale-storage-administrator
 scale_gui_groups_snapadmin: scale-snapshot-administrator
 scale_gui_groups_data_access: scale-data-access
+
+## Enable E-mail notifications in Spectrum Scale GUI
+scale_gui_email_notification: false
+
+## Parameters for configure E-Mail notification
+scale_gui_email_ip_adress: '10.33.3.13'  ## Mandatory
+scale_gui_email_ip_port: '25'            ## Mandatory
+scale_gui_email_replay_email_address: "scale-server-test@no.ibm.com" ## Mandatory
+scale_gui_email_contact_name: 'scale-contact-person'  ## Mandatory
+scale_gui_email_subject: "&cluster&message"   ## Variables:  &message &messageId &severity &dateAndTime &cluster&component
+scale_gui_email_sender_login_id:
+scale_gui_email_password:
+scale_gui_email_headertext:
+scale_gui_email_footertext:
+
+## Enable SNMP notifications in Spectrum Scale GUI
+scale_gui_snmp_notification: false
+
+## parameters for configure SNMP notification
+scale_gui_snmp_server_ip_adress: '10.33.3.13'
+scale_gui_snmp_server_ip_port: '162'
+scale_gui_snmp_server_community: 'Public'
+
+
