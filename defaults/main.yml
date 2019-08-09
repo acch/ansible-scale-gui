@@ -47,6 +47,38 @@ scale_gui_user_username: 'SEC'
 scale_gui_user_role: 'SystemAdmin'
 scale_gui_user_password: 'Storage@Scale1'  #password policy
 
+
+# Change Default GUI User Password Policy
+# Change what you need in your inventory files and rest wil use default
+
+scale_gui_password_policy_change: false
+scale_gui_password_policy_minLength: '6'
+scale_gui_password_policy_maxAge: '60'
+scale_gui_password_policy_minAge: '0'
+scale_gui_password_policy_remember: '3'  #Remember number Of Old Passwords
+scale_gui_password_policy_minUpperChars: '0'  #minimumUpperChars
+scale_gui_password_policy_minLowerChars: '0'
+scale_gui_password_policy_minSpecialChars: '0'
+scale_gui_password_policy_minDigits: '0'
+scale_gui_password_policy_maxRepeat: '0'
+scale_gui_password_policy_minDiff: '1'
+scale_gui_password_policy_rejectOrAllowUserName: '--rejectUserName'  ## --allowUserName
+
+
+#  Minimum upper case characters  =  0
+#  Minimum lower case characters  =  0
+#  Maximum password age  =
+#  Minimum password length  =  6
+#  Minimum password age  =  0
+#  Minimum different characters with respect to old password  =  1
+#  Remember old passwords  =  3
+#  Minimum digits  =  0
+#  Maximum number of repeat characters  =  0
+#  Minimum special case characters  =  0
+#  Reject user-name  =  true
+
+
+
 ## Enable Callhome to IBM
 ## you'll likely want to define per-node roles in your inventory
 scale_gui_callhome: false
@@ -106,5 +138,3 @@ scale_gui_snmp_notification: false
 scale_gui_snmp_server_ip_adress: '10.33.3.13'
 scale_gui_snmp_server_ip_port: '162'
 scale_gui_snmp_server_community: 'Public'
-
-
