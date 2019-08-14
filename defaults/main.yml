@@ -36,20 +36,20 @@ scale_gui_ansible_task_output: false
 ## Default Spectrum Scale GUI Admin.
 ## you'll likely want to define per-node roles in your inventory
 ## For Secure environment, Store you password in Ansible Vault or Hasicorp Vault.
-scale_gui_admin_user: "admin"
-scale_gui_admin_password:
-scale_gui_admin_role: "SecurityAdmin,SystemAdmin"
+#scale_gui_admin_user: "admin"
+#scale_gui_admin_password:
+#scale_gui_admin_role: "SecurityAdmin,SystemAdmin"
 
 ## Ekstra Spectrum Scale GUI user. example: Monitor or RestAPI.
 #scale_gui_user_username: 'SEC'
-scale_gui_user_role: 'SystemAdmin'
-scale_gui_user_password: 'Storage@Scale1'  #password policy
+#scale_gui_user_role: 'SystemAdmin'
+#scale_gui_user_password: 'Storage@Scale1'  #password policy
 
 
 # Change Default GUI User Password Policy
-# Change what you need in your inventory files and rest wil use default #todo add  - default(30)
+# Change what you need in your inventory files and rest wil use default
 
-#scale_gui_password_policy_change: false
+scale_gui_password_policy_change: false
 #scale_gui_password_policy_minLength: '6'
 #scale_gui_password_policy_maxAge: '90'
 #scale_gui_password_policy_minAge: '0'
@@ -83,10 +83,10 @@ scale_gui_callhome: false
 
 ## Default CallHome Information.
 ## you'll likely want to define in your group
-scale_gui_callhome_customer_name: 'ACME'
-scale_gui_callhome_customer_id: 'ACMECUSTOMERID'
-scale_gui_callhome_country_code: 'NO'
-scale_gui_callhome_email: 'acme@acme.com'
+#scale_gui_callhome_customer_name: 'ACME'
+#scale_gui_callhome_customer_id: 'ACMECUSTOMERID'
+#scale_gui_callhome_country_code: 'NO'
+#scale_gui_callhome_email: 'acme@acme.com'
 #scale_gui_callhome_schedule: daily,weekly #TODO is using auto now.
 
 ## Customer-name Supported characters are: "  "['a-z','A-Z','0-9','-','_','.',' ',',']")
@@ -95,47 +95,54 @@ scale_gui_callhome_email: 'acme@acme.com'
 ## The country name must" " be in the alpha-2 code format. For " "example, IN, US"
 ## Proxy location Supported characters are:  "['a-z','A-Z','0-9','-','_','.',' ',',']")
 
+#Callhome with Proxy
 scale_gui_callhome_proxy: false
-scale_gui_callhome_proxy_host: ACMEPROXYHOST
-scale_gui_callhome_proxy_port: 8080
-scale_gui_callhome_proxy_username: ACMEPROXYUSER
-scale_gui_callhome_proxy_password: ACMEPROXYPASS
-scale_gui_callhome_proxy_with_auth: # --with-proxy-auth
+#scale_gui_callhome_proxy_host: 'ACMEPROXYHOST'
+#scale_gui_callhome_proxy_port: '8080'
+#scale_gui_callhome_proxy_username: 'ACMEPROXYUSER'
+#scale_gui_callhome_proxy_password: 'ACMEPROXYPASS'
+#
+#scale_gui_callhome_proxy_with_auth: '--with-proxy-auth'
+
 
 ## Enable Active Directory Integration og GUI
 scale_gui_ldap_integration: false
 
 ## Active Directory information for Managing GUI users in an external AD or LDAP server
 ## you'll likely want to define in your inventory
-scale_gui_ad_name: 'myad'
-scale_gui_ldap_host: 'LBS-AD01.LBS.loc'
-scale_gui_bindDn: 'CN=servicebind,CN=Users,DC=LBS,DC=loc'
-scale_gui_bindPassword:
-scale_gui_baseDn: 'CN=Users,DC=LBS,DC=loc'
-#scale_gui_keystore:
-#scale_gui_keystore_file:
+#scale_gui_ldap_name: 'myad'
+#scale_gui_ldap_host: 'LBS-AD01.LBS.loc'
+#scale_gui_ldap_bindDn: 'CN=servicebind,CN=Users,DC=LBS,DC=loc'
+#scale_gui_ldap_bindPassword:
+#scale_gui_ldap_baseDn: 'CN=Users,DC=LBS,DC=loc'
+scale_gui_ldap_port: '389'
+scale_gui_ldap_type: 'Microsoft Active Directory'
+#scale_gui_ldap_secure_keystore: /tmp/ad.jks #local on GUI Node
+scale_gui_ldap_secure_port: '636'
 
 ## Default Mapping of Active Directory Groups to Security Groups:
 ## you'll likely want to define in your groups.
-scale_gui_groups_securityadmin: scale-administrator
-scale_gui_groups_storageadmin: scale-storage-administrator
-scale_gui_groups_snapadmin: scale-snapshot-administrator
-scale_gui_groups_data_access: scale-data-access
+#scale_gui_groups_securityadmin: 'scale-administrator'
+#scale_gui_groups_storageadmin: 'scale-storage-administrator'
+#scale_gui_groups_snapadmin: 'scale-snapshot-administrator'
+#scale_gui_groups_data_access: 'scale-data-access'
+#scale_gui_groups_protocoladmin: 'scale-monitor'
+#scale_gui_groups_protocoladmin: 'scale-protocoladmin'
 
 ## Enable E-mail notifications in Spectrum Scale GUI
 scale_gui_email_notification: false
 
 ## Parameters for configure E-Mail notification
-scale_gui_email_name: 'SMTP_1' #Mandatory
-scale_gui_email_ip_adress: '10.33.3.13'  ## Mandatory
-scale_gui_email_ip_port: '25'            ## Mandatory
-scale_gui_email_replay_email_address: "scale-server-test@no.ibm.com" ## Mandatory
-scale_gui_email_contact_name: 'scale-contact-person'  ## Mandatory
-scale_gui_email_subject: "&cluster&message"   ## Variables:  &message &messageId &severity &dateAndTime &cluster&component
-scale_gui_email_sender_login_id:
-scale_gui_email_password:
-scale_gui_email_headertext:
-scale_gui_email_footertext:
+#scale_gui_email_name: 'SMTP_1' #Mandatory
+#scale_gui_email_ip_adress: '10.33.3.13'  ## Mandatory
+#scale_gui_email_ip_port: '25'            ## Mandatory
+#scale_gui_email_replay_email_address: "scale-server-test@no.ibm.com" ## Mandatory
+#scale_gui_email_contact_name: 'scale-contact-person'  ## Mandatory
+#scale_gui_email_subject: "&cluster&message"   ## Variables:  &message &messageId &severity &dateAndTime &cluster&component
+#scale_gui_email_sender_login_id:
+#scale_gui_email_password:
+#scale_gui_email_headertext:
+#scale_gui_email_footertext:
 
 ## Parameters for configure E-Mail recipients
 #scale_gui_email_recipients_name: #'acme_email_recipient_name4'
@@ -165,6 +172,6 @@ scale_gui_email_footertext:
 scale_gui_snmp_notification: false
 
 ## parameters for configure SNMP notification
-scale_gui_snmp_server_ip_adress: '10.33.3.13'
-scale_gui_snmp_server_ip_port: '162'
-scale_gui_snmp_server_community: 'Public'
+#scale_gui_snmp_server_ip_adress: '10.33.3.13'
+#scale_gui_snmp_server_ip_port: '162'
+#scale_gui_snmp_server_community: 'Public'
