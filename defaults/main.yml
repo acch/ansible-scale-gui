@@ -36,33 +36,31 @@ scale_gui_ansible_task_output: false
 ## Default Spectrum Scale GUI Admin.
 ## you'll likely want to define per-node roles in your inventory
 ## For Secure environment, Store you password in Ansible Vault or Hasicorp Vault.
-scale_gui_admin: true
 scale_gui_admin_user: "admin"
 scale_gui_admin_password:
 scale_gui_admin_role: "SecurityAdmin,SystemAdmin"
 
 ## Ekstra Spectrum Scale GUI user. example: Monitor or RestAPI.
-scale_gui_user: false
-scale_gui_user_username: 'SEC'
+#scale_gui_user_username: 'SEC'
 scale_gui_user_role: 'SystemAdmin'
 scale_gui_user_password: 'Storage@Scale1'  #password policy
 
 
 # Change Default GUI User Password Policy
-# Change what you need in your inventory files and rest wil use default
+# Change what you need in your inventory files and rest wil use default #todo add  - default(30)
 
-scale_gui_password_policy_change: false
-scale_gui_password_policy_minLength: '6'
-scale_gui_password_policy_maxAge: '60'
-scale_gui_password_policy_minAge: '0'
-scale_gui_password_policy_remember: '3'  #Remember number Of Old Passwords
-scale_gui_password_policy_minUpperChars: '0'  #minimumUpperChars
-scale_gui_password_policy_minLowerChars: '0'
-scale_gui_password_policy_minSpecialChars: '0'
-scale_gui_password_policy_minDigits: '0'
-scale_gui_password_policy_maxRepeat: '0'
-scale_gui_password_policy_minDiff: '1'
-scale_gui_password_policy_rejectOrAllowUserName: '--rejectUserName'  ## --allowUserName
+#scale_gui_password_policy_change: false
+#scale_gui_password_policy_minLength: '6'
+#scale_gui_password_policy_maxAge: '90'
+#scale_gui_password_policy_minAge: '0'
+#scale_gui_password_policy_remember: '3'  #Remember number Of Old Passwords
+#scale_gui_password_policy_minUpperChars: '0'  #minimumUpperChars
+#scale_gui_password_policy_minLowerChars: '0'
+#scale_gui_password_policy_minSpecialChars: '0'
+#scale_gui_password_policy_minDigits: '0'
+#scale_gui_password_policy_maxRepeat: '0'
+#scale_gui_password_policy_minDiff: '1'
+#scale_gui_password_policy_rejectOrAllowUserName: '--rejectUserName'  ## --allowUserName
 
 
 #  Minimum upper case characters  =  0
@@ -97,18 +95,25 @@ scale_gui_callhome_email: 'acme@acme.com'
 ## The country name must" " be in the alpha-2 code format. For " "example, IN, US"
 ## Proxy location Supported characters are:  "['a-z','A-Z','0-9','-','_','.',' ',',']")
 
+scale_gui_callhome_proxy: false
+scale_gui_callhome_proxy_host: ACMEPROXYHOST
+scale_gui_callhome_proxy_port: 8080
+scale_gui_callhome_proxy_username: ACMEPROXYUSER
+scale_gui_callhome_proxy_password: ACMEPROXYPASS
+scale_gui_callhome_proxy_with_auth: # --with-proxy-auth
 
 ## Enable Active Directory Integration og GUI
 scale_gui_ldap_integration: false
 
-## Active Directory information for User Autenticated Scale GUI
+## Active Directory information for Managing GUI users in an external AD or LDAP server
 ## you'll likely want to define in your inventory
-scale_gui_ad_name: myad
-scale_gui_ldap_host: LBS-AD01.LBS.loc
-scale_gui_bindDn: CN=servicebind,CN=Users,DC=LBS,DC=loc
+scale_gui_ad_name: 'myad'
+scale_gui_ldap_host: 'LBS-AD01.LBS.loc'
+scale_gui_bindDn: 'CN=servicebind,CN=Users,DC=LBS,DC=loc'
 scale_gui_bindPassword:
-scale_gui_baseDn: CN=Users,DC=LBS,DC=loc
-#scale_gui_keystore: ##/tmp/ad.jks - local on GUI node - not needed if no secure AD.
+scale_gui_baseDn: 'CN=Users,DC=LBS,DC=loc'
+#scale_gui_keystore:
+#scale_gui_keystore_file:
 
 ## Default Mapping of Active Directory Groups to Security Groups:
 ## you'll likely want to define in your groups.
@@ -121,6 +126,7 @@ scale_gui_groups_data_access: scale-data-access
 scale_gui_email_notification: false
 
 ## Parameters for configure E-Mail notification
+scale_gui_email_name: 'SMTP_1' #Mandatory
 scale_gui_email_ip_adress: '10.33.3.13'  ## Mandatory
 scale_gui_email_ip_port: '25'            ## Mandatory
 scale_gui_email_replay_email_address: "scale-server-test@no.ibm.com" ## Mandatory
@@ -130,6 +136,30 @@ scale_gui_email_sender_login_id:
 scale_gui_email_password:
 scale_gui_email_headertext:
 scale_gui_email_footertext:
+
+## Parameters for configure E-Mail recipients
+#scale_gui_email_recipients_name: #'acme_email_recipient_name4'
+#scale_gui_email_recipients_address: #'email_recipient_address4@acme.com'
+#scale_gui_email_recipients_components: #'SCALEMGMT='
+#scale_gui_email_recipients_components_security_level: #'WARNING'
+#scale_gui_email_recipients_reports: #'--quotaNotification'
+#scale_gui_email_recipients_quotathreshold: #'100.0'
+
+#  Parameter               Description
+#  userName                Specifies the name of the email user that is going to be changed.
+#  --address           Specifies the address of the email user.
+
+#  --components        A comma-seperated list of component/severity pairs, e.g. GPFS=INFO,NSD=ERROR
+###  AFM=WARNING,AUTH=WARNING,BLOCK=WARNING,CESNETWORK=WARNING,CLOUDGATEWAY=WARNING,CLUSTERSTATE=WARNING,DISK=WARNING,FILEAUDITLOG=WARNING,FILESYSTEM=WARNING,
+###  GPFS=WARNING,GUI=WARNING,HADOOPCONNECTOR=WARNING,KEYSTONE=WARNING,MSGQUEUE=WARNING,NETWORK=WARNING,NFS=WARNING,OBJECT=WARNING,PERFMON=WARNING,
+###  SCALEMGMT=WARNING,SMB=WARNING,CUSTOM=WARNING,AUTH_OBJ=WARNING,CES=WARNING,CESIP=WARNING,NODE=WARNING,THRESHOLD=WARNING,WATCHFOLDER=WARNING,NVME=WARNING,POWERHW=WARNING'
+
+#  --reports           Specifies the component to be reported (utilization/status/gui/syslog/quota/backup).
+###  AFM,AUTH,BLOCK,CESNETWORK,CLOUDGATEWAY,CLUSTERSTATE,DISK,FILEAUDITLOG,FILESYSTEM,GPFS,GUI,HADOOPCONNECTOR,KEYSTONE,
+###  MSGQUEUE,NETWORK,NFS,OBJECT,PERFMON,SCALEMGMT,SMB,CUSTOM,AUTH_OBJ,CES,CESIP,NODE,THRESHOLD,WATCHFOLDER,NVME,POWERHW
+
+#  --quotaNotification Enables notification for quota thresholds.
+#  --quotathreshold    Sets the quota threshold. The default value is 100.
 
 ## Enable SNMP notifications in Spectrum Scale GUI
 scale_gui_snmp_notification: false

@@ -1,4 +1,4 @@
-IBM Spectrum Scale (GPFS) GUI Ansible Role  (Not finsished)
+IBM Spectrum Scale (GPFS) GUI Ansible Role  (Not finished)
 ======================================
 
  
@@ -10,15 +10,15 @@ Particularly looking for [feedback](https://github.com/acch/ansible-scale/issues
 Features
 --------
 
-- Install GUI and zimon packages
-- Configure Performance Monitoring and collectors.
-- Install and configure CallHome.
-- Dual GUI Nodes.
-- Create Local Users for GUI
-- Password Policy for GUI
-- Configure Active Directory and Map roles to AD Groups.
-- Configure E-MAIL
-- Configure SNMP
+- **Install GUI and zimon packages**
+- **Configure Performance Monitoring and collectors**
+- **Install and configure CallHome**
+- **Dual GUI Nodes**
+- **Create Local Users for GUI**
+- **Password Policy for GUI**
+- **Configure Active Directory and Map roles to AD Groups**
+- **Configure E-MAIL**
+- **Configure SNMP**
 
 
 

@@ -121,19 +121,19 @@
 
 #
 # Change Default GUI User Password Policy
-# Password Policy shown here only effects internal GUI users only.
+# Password Policy shown here only effects internal GUI users only
 
 - name: Change password Policy
-  shell: /usr/lpp/mmfs/gui/cli/chpasswordpolicy  --minLength "{{ scale_gui_password_policy_minLength }}" --maxAge "{{ scale_gui_password_policy_maxAge }}" --minAge "{{ scale_gui_password_policy_minAge }}" --remember "{{ scale_gui_password_policy_remember }}" --minUpperChars "{{ scale_gui_password_policy_minUpperChars }}" --minLowerChars "{{ scale_gui_password_policy_minLowerChars }}" --minSpecialChars "{{ scale_gui_password_policy_minSpecialChars }}" --minDigits "{{ scale_gui_password_policy_minDigits }}" --maxRepeat "{{ scale_gui_password_policy_maxRepeat }}" --minDiff "{{ scale_gui_password_policy_minDiff }}" "{{ scale_gui_password_policy_rejectOrAllowUserName }}"
+  shell: /usr/lpp/mmfs/gui/cli/chpasswordpolicy  --minLength "{{ scale_gui_password_policy_minLength | default(6) }}" --maxAge "{{ scale_gui_password_policy_maxAge | default(90) }}" --minAge "{{ scale_gui_password_policy_minAge | default(0) }}" --remember "{{ scale_gui_password_policy_remember | default(3) }}" --minUpperChars "{{ scale_gui_password_policy_minUpperChars | default(0) }}" --minLowerChars "{{ scale_gui_password_policy_minLowerChars | default(0) }}" --minSpecialChars "{{ scale_gui_password_policy_minSpecialChars | default(0) }}" --minDigits "{{ scale_gui_password_policy_minDigits | default(0) }}" --maxRepeat "{{ scale_gui_password_policy_maxRepeat | default(0) }}" --minDiff "{{ scale_gui_password_policy_minDiff | default(1) }}" "{{ scale_gui_password_policy_rejectOrAllowUserName | default('--rejectUserName') }}"
   register: conf_gui_password_policy
   failed_when: " conf_gui_password_policy.rc != 0 and 'EFSSG1000I The command completed successfully.' not in conf_gui_password_policy.stdout"
+  run_once: true
   when:
     - scale_gui_collector | bool
     - scale_gui_password_policy_change | bool
 #
 # Create Local GUI Admin User
 #
-##
 
 - name: configure | Check if local admin GUI user is created
   shell: /usr/lpp/mmfs/gui/cli/lsuser -Y | grep -v HEADER | cut -d ':' -f 7
@@ -144,7 +144,7 @@
   changed_when: false
   when:
     - scale_gui_collector | bool
-    - scale_gui_admin | bool
+    - scale_gui_admin_user is defined
 
 - name: configure | Check if local admin GUI user is created - output
   run_once: true
@@ -153,8 +153,8 @@
     msg: "{{ conf_gui_admin_check.stdout.split('\n') }}"
   when:
     - scale_gui_collector | bool
-    - scale_gui_admin | bool
     - scale_gui_ansible_task_output | bool
+    - scale_gui_admin_user is defined
 
 - name: configure | Create local GUI admin user
   shell: /usr/lpp/mmfs/gui/cli/mkuser "{{ scale_gui_admin_user }}" -g "{{ scale_gui_admin_role }}" -p "{{ scale_gui_admin_password }}"
@@ -163,12 +163,13 @@
   register: conf_createadmin
   failed_when: "conf_createadmin.rc != 0 and 'has been successfully created.' not in conf_createadmin.stdout"
   ignore_errors: yes
+  no_log: true
   when:
     - scale_gui_collector | bool
-    - scale_gui_admin | bool
+    - scale_gui_admin_user is defined
     - " ( scale_gui_admin_user ) not in conf_gui_admin_check.stdout"
 #
-# Create Extra Local GUI user - Example: SEC and RestAPI - #TODO Created from user list insted?
+# Create Extra Local GUI user - Example for SEC and RestAPI
 #
 
 - name: configure | Create local User for GUI.
@@ -178,16 +179,17 @@
   register: conf_create_gui_user
   failed_when: "conf_create_gui_user.rc != 0 and 'has been successfully created.' not in conf_create_gui_user.stdout"
   ignore_errors: yes
+  no_log: true
   when:
     - scale_gui_collector | bool
-    - scale_gui_user | bool
+    - scale_gui_user_username is defined
     - " ( scale_gui_user_username ) not in conf_gui_admin_check.stdout"
 
 #
 ## Configure Callhome service
 #
 
-- name: configure | Check if Callhome is enabled  #TODO there is som BUGS now, it creates new callhomes.
+- name: configure | Check if Callhome is enabled
   shell: "/usr/lpp/mmfs/bin/mmcallhome capability list -Y |grep -v HEADER | cut -d ':' -f 9"
   register: conf_callhome_check
   run_once: true
@@ -208,7 +210,26 @@
     - scale_gui_callhome | bool
     - scale_gui_ansible_task_output | bool
 
-- block: #When callhome is not enabled
+- name: configure | Check if Callhome autoGroup is created
+  shell: "/usr/lpp/mmfs/bin/mmcallhome group list  -Y | grep -v HEADER | cut -d ':' -f 7"
+  register: conf_callhome_autogroup_check
+  run_once: true
+  failed_when: false
+  changed_when: false
+  when:
+    - scale_gui_collector | bool
+    - scale_gui_callhome | bool
+
+- name: configure | Check if Callhome autoGroup is created - output
+  run_once: true
+  debug:
+    msg: "{{ conf_callhome_autogroup_check.stdout }}"
+  when:
+    - scale_gui_collector | bool
+    - scale_gui_callhome | bool
+    - scale_gui_ansible_task_output | bool
+
+- block: #When Call home is not enabled
 
     - name: configure | Call Home configure information
       command: /usr/lpp/mmfs/bin/mmcallhome info change --customer-name "{{ scale_gui_callhome_customer_name }}" --customer-id "{{ scale_gui_callhome_customer_id }}" --country-code "{{ scale_gui_callhome_country_code }}" --email "{{ scale_gui_callhome_email }}"
@@ -219,24 +240,47 @@
         - scale_gui_collector | bool
         - scale_gui_callhome | bool
 
-    - name: configure | Call Home create group
+    - name: configure | Call Home configure Proxy
+      command: /usr/lpp/mmfs/bin/mmcallhome proxy change --proxy-location "{{ scale_gui_callhome_proxy_host }}" --proxy-port "{{ scale_gui_callhome_proxy_port }}" --proxy-username "{{ scale_gui_callhome_proxy_username }}" --proxy-password "{{ scale_gui_callhome_proxy_password }}"
+      run_once: true
+      when:
+        - scale_gui_collector | bool
+        - scale_gui_callhome | bool
+        - scale_gui_callhome_proxy | bool
+        - scale_gui_callhome_proxy_host is defined
+
+    - name: configure | Call Home create group auto
       vars:
         collector_nodes: "{{ groups['scale_gui_collectors'] | map('extract', hostvars, 'scale_daemon_nodename') | list }}"
-      command: /usr/lpp/mmfs/bin/mmcallhome group auto --server '{{ collector_nodes | join(',') }}' --enable ACCEPT --force
+      command: /usr/lpp/mmfs/bin/mmcallhome group auto --server '{{ collector_nodes | first }}' --enable ACCEPT --force
       register: conf_callhome_group
       failed_when: "conf_callhome_group.rc != 0 and 'The automatic group creation completed successfully' and 'Call home enabled has been set to true' not in conf_callhome_group.stdout"
       #delegate_to: "{{ collector_nodes | first }}"
       run_once: true
       when:
+        - " 'autoGroup_1' not in conf_callhome_autogroup_check.stdout"
         - scale_gui_collector | bool
         - scale_gui_callhome | bool
 
-    - name: configure | Enable Call Home   #TODO  dobbel up of enable?
+    - name: configure | Call Home enable with Proxy
+      command: mmcallhome proxy enable "{{ scale_gui_callhome_proxy_with_auth }}"
+      register: conf_callhome_enable_proxy
+      failed_when: " 'Call home proxy-enabled has been set to true' not in conf_callhome_enable_proxy.stdout"
+      ignore_errors: yes
+      run_once: true
+      when:
+        - scale_gui_collector | bool
+        - scale_gui_callhome | bool
+        - scale_gui_callhome_proxy | bool
+        - scale_gui_callhome_proxy_with_auth is defined
+
+    - name: configure | Enable Call Home
       command: /usr/lpp/mmfs/bin/mmcallhome capability enable accept
       register: conf_callhome_enable
       failed_when: "conf_callhome_enable.rc != 0 and 'Call home enabled has been set to true' not in conf_callhome_enable.stdout"
       run_once: true
       when:
+        - " 'enabled' not in conf_callhome_check.stdout"
         - scale_gui_collector | bool
         - scale_gui_callhome | bool
 
@@ -245,12 +289,13 @@
       register: conf_callhome_test
       failed_when: "conf_callhome_test.rc != 0 and 'OK' not in conf_callhome_test.stdout"
       run_once: true
+      ignore_errors: yes
       when:
         - scale_gui_collector | bool
         - scale_gui_callhome | bool
 
   when:
-    - " 'enabled' not in conf_callhome_check.stdout"
+    - " 'enabled' not in conf_callhome_check.stdout or 'autoGroup_1' not in conf_callhome_autogroup_check.stdout"
     - scale_gui_callhome | bool
     - scale_gui_collector | bool
 #
@@ -286,13 +331,17 @@
   run_once: true
   #delegate_to: "{{ play_hosts | first }}"
   ignore_errors: yes
+  #no_log: true
   when:
     - scale_gui_collector | bool
     - scale_gui_ldap_integration | bool
     - " 'EFSSG0100I There are no values to return' in conf_lsldap.stdout "
 
-- name: config | Check if GUI have created user groups and roles for LDAP #TODO check for group from variable instead, only checks scale-
-  shell: /usr/lpp/mmfs/gui/cli/lsusergrp -Y | grep scale | cut -d ':' -f 7
+#
+# Configure LDAP Groups to roles for Spectrum Scale GUI
+#
+- name: config | Check if GUI have created user groups and roles for LDAP #TODO check for group from variable instead
+  shell: /usr/lpp/mmfs/gui/cli/lsusergrp -Y | grep -v HEADER |cut -d ':' -f 7
   register: conf_lsusergrp
   #delegate_to: "{{ play_hosts | first }}"
   failed_when: false
@@ -304,7 +353,6 @@
 
 - name: config | Check if GUI have created user groups and roles for LDAP - output
   run_once: true
-  #delegate_to: "{{ play_hosts | first }}"
   debug:
     msg: "{{ conf_lsusergrp.stdout.split('\n') }}"
   when:
@@ -312,21 +360,49 @@
     - scale_gui_ldap_integration | bool
     - scale_gui_ansible_task_output | bool
 
-- name: config | Map a basic set of roles to LDAP groups  #TODO: Make Loop instead?)
-  shell: |
-    /usr/lpp/mmfs/gui/cli/mkusergrp "{{ scale_gui_groups_securityadmin }}" --role securityadmin
-    /usr/lpp/mmfs/gui/cli/mkusergrp "{{ scale_gui_groups_storageadmin }}" --role storageadmin
-    /usr/lpp/mmfs/gui/cli/mkusergrp "{{ scale_gui_groups_snapadmin }}" --role snapadmin
-    /usr/lpp/mmfs/gui/cli/mkusergrp "{{ scale_gui_groups_data_access }}" --role dataaccess
-  environment:
-    JAVA_HOME: /usr/lpp/mmfs/java/jre
-  run_once: true
-  #delegate_to: "{{ play_hosts | first }}"
-  ignore_errors: yes
+- block: #when scale_gui_ldap_integration and scale_gui_collector
+    - name: config | Map roles to LDAP groups - Role Securityadmin
+      command: '/usr/lpp/mmfs/gui/cli/mkusergrp "{{ scale_gui_groups_securityadmin }}" --role securityadmin'
+      environment:
+        JAVA_HOME: /usr/lpp/mmfs/java/jre
+      run_once: true
+      ignore_errors: yes
+      when:
+        - scale_gui_groups_securityadmin is defined
+        - " scale_gui_groups_securityadmin not in conf_lsusergrp.stdout"
+
+    - name: config | Map roles to LDAP groups - Role SnapAdmin
+      command: '/usr/lpp/mmfs/gui/cli/mkusergrp "{{ scale_gui_groups_storageadmin }}" --role storageadmin'
+      environment:
+        JAVA_HOME: /usr/lpp/mmfs/java/jre
+      run_once: true
+      ignore_errors: yes
+      when:
+        - scale_gui_groups_storageadmin is defined
+        - " scale_gui_groups_storageadmin not in conf_lsusergrp.stdout"
+
+    - name: config | Map roles to LDAP groups - Role SnapAdmin
+      command: '/usr/lpp/mmfs/gui/cli/mkusergrp "{{ scale_gui_groups_snapadmin }}" --role snapadmin'
+      environment:
+        JAVA_HOME: /usr/lpp/mmfs/java/jre
+      run_once: true
+      ignore_errors: yes
+      when:
+        - scale_gui_groups_snapadmin is defined
+        - " scale_gui_groups_snapadmin not in conf_lsusergrp.stdout"
+
+    - name: config | Map roles to LDAP groups - Role Data Access
+      command: '/usr/lpp/mmfs/gui/cli/mkusergrp "{{ scale_gui_groups_data_access }}" --role dataaccess'
+      environment:
+        JAVA_HOME: /usr/lpp/mmfs/java/jre
+      run_once: true
+      ignore_errors: yes
+      when:
+        - scale_gui_groups_data_access is defined
+        - " scale_gui_groups_data_access not in conf_lsusergrp.stdout"
   when:
     - scale_gui_collector | bool
     - scale_gui_ldap_integration | bool
-    - " 'scale-' not in conf_lsusergrp.stdout"
 
 #
 # Configure E-mail notifications in Spectrum Scale GUI
@@ -354,7 +430,7 @@
     - scale_gui_ansible_task_output | bool
 
 - name: config | Configure E-Mail notifications
-  command: /usr/lpp/mmfs/gui/cli/mkemailserver SMTP_1 --address "{{ scale_gui_email_ip_adress }}" --port "{{ scale_gui_email_ip_port }}" --reply "{{ scale_gui_email_replay_email_address }}" --contact "{{ scale_gui_email_contact_name }}" --subject "{{ scale_gui_email_subject }}"  --login "{{ scale_gui_email_sender_login_id }}" --password "{{ scale_gui_email_password }}" --header "{{ scale_gui_email_headertext }}" --footer "{{ scale_gui_email_footertext }}"
+  command: /usr/lpp/mmfs/gui/cli/mkemailserver "{{ scale_gui_email_name }}" --address "{{ scale_gui_email_ip_adress }}" --port "{{ scale_gui_email_ip_port }}" --reply "{{ scale_gui_email_replay_email_address }}" --contact "{{ scale_gui_email_contact_name }}" --subject "{{ scale_gui_email_subject }}"  --login "{{ scale_gui_email_sender_login_id }}" --password "{{ scale_gui_email_password }}" --header "{{ scale_gui_email_headertext | default() }}" --footer "{{ scale_gui_email_footertext | default() }}"
   register: conf_email_notifications
   run_once: true
   #delegate_to: "{{ play_hosts | first }}"
@@ -363,7 +439,44 @@
   when:
     - scale_gui_collector | bool
     - scale_gui_email_notification | bool
-    - " 'EFSSG0100I There are no values to return' in conf_email_notifications_check.stdout"
+    - " 'EFSSG0100I There are no values to return' in conf_email_notifications_check.stdout or scale_gui_email_name not in conf_email_notifications_check.stdout"
+
+#
+# Configure E-mail recipients in Spectrum Scale GUI
+#
+- name: config | Check if e-mail recipients is allready created
+  shell: /usr/lpp/mmfs/gui/cli/lsemailuser -Y | grep -v HEADER | cut -d ':' -f 7
+  register: conf_email_recipient_check
+  run_once: true
+  #delegate_to: "{{ play_hosts | first }}"
+  failed_when: false
+  changed_when: false
+  when:
+    - scale_gui_collector | bool
+    - scale_gui_email_notification | bool
+
+- name: config | Check if e-mail recipients is allready created - Output
+  run_once: true
+  #delegate_to: "{{ play_hosts | first }}"
+  debug:
+    msg: "{{ conf_email_recipient_check.stdout}}"
+  when:
+    - scale_gui_collector | bool
+    - scale_gui_email_notification | bool
+    - scale_gui_ansible_task_output | bool
+
+- name: config | Add e-mail recipients
+  command: /usr/lpp/mmfs/gui/cli/mkemailuser "{{ scale_gui_email_recipients_name }}" --address "{{ scale_gui_email_recipients_address }}" --components "{{ scale_gui_email_recipients_components }}""{{ scale_gui_email_recipients_components_security_level }}" --reports "{{ scale_gui_email_recipients_reports }}" --quotathreshold "{{ scale_gui_email_recipients_quotathreshold }}"
+  register: conf_email_recipient
+  run_once: true
+  #delegate_to: "{{ play_hosts | first }}"
+  failed_when: " 'EFSSG1000I The command completed successfully.' not in conf_email_recipient.stdout"
+  ignore_errors: yes
+  when:
+    - scale_gui_collector | bool
+    - scale_gui_email_notification | bool
+    - scale_gui_email_recipients_name is defined
+    - "  ( scale_gui_email_recipients_name ) not in conf_email_recipient_check.stdout"
 
 #
 # Configure SNMP notifications in Spectrum Scale GUI
