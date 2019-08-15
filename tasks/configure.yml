@@ -89,14 +89,16 @@
   when:
     - scale_gui_ansible_task_output | bool
 
-- name: configure | Enable nodes for performance collection
+- name: configure | Enable nodes for performance collection #todo discuss: should it be dependent on scale_gui_collector?
   vars:
     sensor_nodes: "{{ ansible_play_hosts | map('extract', hostvars, 'scale_daemon_nodename') | list }}"
   command: /usr/lpp/mmfs/bin/mmchnode --perfmon -N {{ sensor_nodes | join(',') }}
   register: conf_enable_node_perfmon
   run_once: true
+  ignore_errors: yes
   failed_when: "conf_enable_node_perfmon.rc != 0 and 'Propagating the cluster configuration data to all.' not in conf_enable_node_perfmon.stdout"
   when:
+    - scale_gui_collector | bool
     - " 'perfmon' not in conf_perfmon_check.stdout"
 
 - name: configure | Start and enable collector service
@@ -172,7 +174,6 @@
 - name: configure | Create local user for GUI
   shell: /usr/lpp/mmfs/gui/cli/mkuser "{{ scale_gui_user_username }}" -g "{{ scale_gui_user_role }}" -p "{{ scale_gui_user_password }}"
   run_once: true
-  #delegate_to: "{{ play_hosts | first }}"
   register: conf_create_gui_user
   failed_when: "conf_create_gui_user.rc != 0 and 'has been successfully created.' not in conf_create_gui_user.stdout"
   ignore_errors: yes
@@ -186,23 +187,21 @@
 ## Configure Callhome service
 #
 
-- name: configure | Callhome - Check if Callhome is enabled
+- name: configure | Callhome - Check if Callhome is enabled  #TODO Dicuss. if the check is not run the  Call Home - Configure information wil fail.
   shell: "/usr/lpp/mmfs/bin/mmcallhome capability list -Y |grep -v HEADER | cut -d ':' -f 9"
   register: conf_callhome_check
   run_once: true
-  #delegate_to: "{{ play_hosts | first }}"
   failed_when: false
   changed_when: false
-  when:
-    - scale_gui_collector | bool
+  #when:
+  #  - scale_gui_collector | bool
 
 - name: configure | Callhome - Check if Callhome is enabled - output
   run_once: true
-  #delegate_to: "{{ play_hosts | first }}"
   debug:
      msg: "{{ conf_callhome_check.stdout }}"
   when:
-    - scale_gui_collector | bool
+    #- scale_gui_collector | bool
     - scale_gui_ansible_task_output | bool
 
 - name: configure | Callhome - Check if autoGroup is created
@@ -211,15 +210,15 @@
   run_once: true
   failed_when: false
   changed_when: false
-  when:
-    - scale_gui_collector | bool
+  #when:
+  #  - scale_gui_collector | bool
 
 - name: configure | Callhome - Check if autoGroup is created - output
   run_once: true
   debug:
     msg: "{{ conf_callhome_autogroup_check.stdout }}"
   when:
-    - scale_gui_collector | bool
+  #  - scale_gui_collector | bool
     - scale_gui_ansible_task_output | bool
 
 - block: #When Call home is not enabled or 'autoGroup_1' not in conf_callhome_autogroup_check
@@ -227,7 +226,6 @@
     - name: configure | Call Home - Configure information
       command: /usr/lpp/mmfs/bin/mmcallhome info change --customer-name "{{ scale_gui_callhome_customer_name }}" --customer-id "{{ scale_gui_callhome_customer_id }}" --country-code "{{ scale_gui_callhome_country_code }}" --email "{{ scale_gui_callhome_email }}"
       run_once: true
-      #delegate_to: "{{ play_hosts | first }}"
       ignore_errors: yes
       when:
         - scale_gui_collector | bool
@@ -248,7 +246,6 @@
       command: /usr/lpp/mmfs/bin/mmcallhome group auto --server '{{ collector_nodes | first }}' --enable ACCEPT --force
       register: conf_callhome_group
       failed_when: "conf_callhome_group.rc != 0 and 'The automatic group creation completed successfully' and 'Call home enabled has been set to true' not in conf_callhome_group.stdout"
-      #delegate_to: "{{ collector_nodes | first }}"
       run_once: true
       when:
         - " 'autoGroup_1' not in conf_callhome_autogroup_check.stdout"
