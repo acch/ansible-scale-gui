@@ -70,7 +70,7 @@
   run_once: true
 
 #
-# PERFMON
+# Performance Monitoring
 #
 - name: configure | Check before enable nodes for performance collection #TODO only check first node for perfmon.
   vars:
@@ -298,14 +298,12 @@
   run_once: true
   failed_when: false
   changed_when: false
-  #delegate_to: "{{ play_hosts | first }}"
   when:
     - scale_gui_collector | bool
     - scale_gui_ldap_integration | bool
 
 - name: config | LDAP - Check if GUI is allready ldap integrated - Output
   run_once: true
-  #delegate_to: "{{ play_hosts | first }}"
   debug:
     msg: "{{ conf_lsldap.stdout.split('\n') }}"
   when:
@@ -315,12 +313,12 @@
 
 - name: config | LDAP - LDAP Integrate GUI
   shell: |
-    /usr/lpp/mmfs/gui/cli/mkldap "{{ scale_gui_ldap_name }}" --host "{{ scale_gui_ldap_host }}" --bindDn "{{ scale_gui_ldap_bindDn }}" --bindPassword "{{ scale_gui_ldap_bindPassword }}" --baseDn "{{ scale_gui_ldap_baseDn }}" --port "{{ scale_gui_ldap_port }}" --type "{{ scale_gui_ldap_type }}"
+    /usr/lpp/mmfs/gui/cli/mkldap "{{ scale_gui_ldap_name }}" --host "{{ scale_gui_ldap_host }}" --bindDn "{{ scale_gui_ldap_bindDn }}" --bindPassword "{{ scale_gui_ldap_bindPassword }}" --baseDn "{{ scale_gui_ldap_baseDn }}" --port "{{ scale_gui_ldap_port | default(389) }}" --type "{{ scale_gui_ldap_type | default(Microsoft Active Directory) }}"
   environment:
     JAVA_HOME: /usr/lpp/mmfs/java/jre
   run_once: true
   ignore_errors: yes
-  no_log: true
+  no_log: false
   when:
     - scale_gui_collector | bool
     - scale_gui_ldap_integration | bool
@@ -329,7 +327,7 @@
 
 - name: config | LDAP - Secure LDAP Integrate GUI #TODO Not tested
   shell: |
-    /usr/lpp/mmfs/gui/cli/mkldap "{{ scale_gui_ad_name }}" --host "{{ scale_gui_ldap_host }}" --bindDn "{{ scale_gui_bindDn }}" --bindPassword "{{ scale_gui_bindPassword }}" --baseDn "{{ scale_gui_baseDn }}" --port "{{ scale_gui_ldap_secure_port }}" --type "{{ scale_gui_ldap_type }}" --keystore "{{ scale_gui_ldap_secure_keystore }}"
+    /usr/lpp/mmfs/gui/cli/mkldap "{{ scale_gui_ad_name }}" --host "{{ scale_gui_ldap_host }}" --bindDn "{{ scale_gui_bindDn }}" --bindPassword "{{ scale_gui_bindPassword }}" --baseDn "{{ scale_gui_baseDn }}" --port "{{ scale_gui_ldap_secure_port | default(636) }}" --type "{{ scale_gui_ldap_type | default(Microsoft Active Directory) }}" --keystore "{{ scale_gui_ldap_secure_keystore }}"
   environment:
     JAVA_HOME: /usr/lpp/mmfs/java/jre
   run_once: true
@@ -436,7 +434,6 @@
   command: /usr/lpp/mmfs/gui/cli/lsemailserver
   register: conf_email_notifications_check
   run_once: true
-  #delegate_to: "{{ play_hosts | first }}"
   failed_when: false
   changed_when: false
   when:
@@ -445,7 +442,6 @@
 
 - name: config | Email - Verify if e-mail notifications is allready enabled - Output
   run_once: true
-  #delegate_to: "{{ play_hosts | first }}"
   debug:
     msg: "{{ conf_email_notifications_check.stdout}}"
   when:
@@ -457,7 +453,6 @@
   command: /usr/lpp/mmfs/gui/cli/mkemailserver "{{ scale_gui_email_name }}" --address "{{ scale_gui_email_ip_adress }}" --port "{{ scale_gui_email_ip_port }}" --reply "{{ scale_gui_email_replay_email_address }}" --contact "{{ scale_gui_email_contact_name }}" --subject "{{ scale_gui_email_subject }}"  --login "{{ scale_gui_email_sender_login_id }}" --password "{{ scale_gui_email_password }}" --header "{{ scale_gui_email_headertext | default() }}" --footer "{{ scale_gui_email_footertext | default() }}"
   register: conf_email_notifications
   run_once: true
-  #delegate_to: "{{ play_hosts | first }}"
   failed_when: " 'EFSSG1000I The command completed successfully.' not in conf_email_notifications.stdout"
   ignore_errors: yes
   when:
@@ -472,7 +467,6 @@
   shell: /usr/lpp/mmfs/gui/cli/lsemailuser -Y | grep -v HEADER | cut -d ':' -f 7
   register: conf_email_recipient_check
   run_once: true
-  #delegate_to: "{{ play_hosts | first }}"
   failed_when: false
   changed_when: false
   when:
@@ -481,7 +475,6 @@
 
 - name: config | Email recipients - Check if e-mail recipients is allready created - Output
   run_once: true
-  #delegate_to: "{{ play_hosts | first }}"
   debug:
     msg: "{{ conf_email_recipient_check.stdout}}"
   when:
@@ -493,7 +486,6 @@
   command: /usr/lpp/mmfs/gui/cli/mkemailuser "{{ scale_gui_email_recipients_name }}" --address "{{ scale_gui_email_recipients_address }}" --components "{{ scale_gui_email_recipients_components_security_level }}" --reports "{{ scale_gui_email_recipients_reports }}" "{{ scale_gui_email_recipients_quotaNotification }}" --quotathreshold "{{ scale_gui_email_recipients_quotathreshold }}"
   register: conf_email_recipient
   run_once: true
-  #delegate_to: "{{ play_hosts | first }}"
   failed_when: " 'EFSSG1000I The command completed successfully.' not in conf_email_recipient.stdout"
   ignore_errors: yes
   when:
@@ -512,7 +504,6 @@
     collector_nodes: "{{ groups['scale_gui_collectors'] | map('extract', hostvars, 'scale_daemon_nodename') | list }}"
   register: conf_snmp_notifications_check
   run_once: true
-  #delegate_to: "{{ play_hosts | first }}"
   failed_when: false
   changed_when: false
   when:
@@ -523,7 +514,6 @@
   vars:
     collector_nodes: "{{ groups['scale_gui_collectors'] | map('extract', hostvars, 'scale_daemon_nodename') | list }}"
   run_once: true
-  #delegate_to: "{{ play_hosts | first }}"
   debug:
     msg: "{{ conf_snmp_notifications_check.stdout}}"
   when:
@@ -537,7 +527,6 @@
   command: /usr/lpp/mmfs/gui/cli/mksnmpserver SNMP_1 --ip "{{ scale_gui_snmp_server_ip_adress }}" --port "{{ scale_gui_snmp_server_ip_port }}" --community "{{ scale_gui_snmp_server_community }}"
   register: conf_snmp_notifications
   run_once: true
-  #delegate_to: "{{ play_hosts | first }}"
   failed_when: " 'EFSSG1000I The command completed successfully.' not in conf_snmp_notifications.stdout"
   ignore_errors: yes
   when:
@@ -546,19 +535,42 @@
     - " 'EFSSG0100I There are no values to return' in conf_snmp_notifications_check.stdout"
 
 #
-# Integrate of HasiCorp - Consul and Vault.
+# Integrate of HasiCorp - Vault.
 #
-# Create local admin user and get and write password to Vault
+# Create local GUI admin user and get and write password to Vault
+#
+- name: configure | Hasicorp Vault - Local admin users - Check if local admin user is allready created
+  shell: /usr/lpp/mmfs/gui/cli/lsuser -Y | grep -v HEADER | cut -d ':' -f 7
+  register: conf_gui_vault_admin_check
+  run_once: true
+  failed_when: false
+  changed_when: false
+  when:
+    - scale_gui_collector | bool
+    - scale_gui_admin_hc_vault_user is defined
+    - scale_gui_admin_user is not defined
+
+- name: configure | Check if local  GUI user is created - output
+  run_once: true
+  debug:
+    msg: "{{ conf_gui_vault_admin_check.stdout.split('\n') }}"
+  when:
+    - scale_gui_collector | bool
+    - scale_gui_ansible_task_output | bool
+    - scale_gui_admin_hc_vault_user is defined
+    - scale_gui_admin_user is not defined
+
 - name: configure | Hasicorp Vault - Create local admin user and get and write password to Vault
   shell: |
-    vault kv put secret/private/{{ computed.name }}/gui gui_admin_pwd=$(vault write -field='value' gen/password length=12 symbols=0)
-    /usr/lpp/mmfs/gui/cli/mkuser "{{ scale_gui_admin_hc_vault_user }}" -g "{{ scale_gui_admin_hc_vault_role }}" -p $(vault kv get -field='gui_admin_pwd' secret/private/{{ computed.name }}/gui)
+    vault kv put secret/private/{{ computed.name | default(AdminGUI) }}/gui gui_admin_pwd=$(vault write -field='value' gen/password length=12 symbols=0)
+    /usr/lpp/mmfs/gui/cli/mkuser "{{ scale_gui_admin_hc_vault_user }}" -g "{{ scale_gui_admin_hc_vault_role }}" -p $(vault kv get -field='gui_admin_pwd' secret/private/{{ computed.name | default(AdminGUI) }}/gui)
   run_once: True
   ignore_errors: yes
   when:
     - scale_gui_collector | bool
     - scale_gui_admin_hc_vault_user is defined
     - scale_gui_admin_user is not defined
+    - " ( scale_gui_admin_hc_vault_user ) not in conf_gui_vault_admin_check.stdout"
 
 #
 # Generation and Import of GUI Certificate from Hasicorp Vault. This needs to be run from Terraform.
@@ -570,17 +582,20 @@
 - name: cluster | Find existing cluster
   shell: /usr/lpp/mmfs/bin/mmlscluster -Y | grep -v HEADER | grep clusterSummary | cut -d ':' -f 7
   register: scale_cluster_clustername
+  run_once: True
   changed_when: false
   failed_when: false
+  when:
+    - scale_gui_collector | bool
 
 - name: config  | Verify if GUI have allready imported GUI certficate
   shell: /usr/lpp/mmfs/gui/cli/lshttpskeystore -c {{ scale_cluster_clustername.stdout }}
   register: lshttpskeystore
   run_once: True
+  changed_when: false
   ignore_errors: yes
   when:
     - scale_gui_collector | bool
-    - scale_gui_cert_hc_vault | bool
 
 - name: config | Verify if GUI have allready imported GUI certficate - output
   run_once: True
@@ -591,7 +606,7 @@
     - scale_gui_cert_hc_vault | bool
     - scale_gui_ansible_task_output | bool
 
-# GUI needs to be initialized.
+# FYI: GUI needs to be initialized.
 - block:
     - name: Config | GUI - Cleanup existing key's
       file:
@@ -601,6 +616,7 @@
         - /etc/ssl/certs/scale_gui.p12
         - /opt/ibm/wlp/usr/servers/gpfsgui/resources/security/scale_gui.jks
       run_once: True
+      ignore_errors: yes
       when:
         - scale_gui_collector | bool
         - scale_gui_cert_hc_vault | bool
