@@ -45,9 +45,13 @@ scale_gui_ansible_task_output: false
 #scale_gui_user_role: 'SystemAdmin'
 #scale_gui_user_password: 'Storage@Scale1'  #password policy
 
+##hasicorp admin vault
+#scale_gui_admin_hc_vault: false
+#scale_gui_admin_hc_vault_user: "admin"
+#scale_gui_admin_hc_vault_role: "SecurityAdmin,SystemAdmin"
 
-# Change Default GUI User Password Policy
-# Change what you need in your inventory files and rest wil use default
+## Change Default GUI User Password Policy
+## Change what you need in your inventory files and rest wil use default
 
 scale_gui_password_policy_change: false
 #scale_gui_password_policy_minLength: '6'
@@ -175,3 +179,6 @@ scale_gui_snmp_notification: false
 #scale_gui_snmp_server_ip_adress: '10.33.3.13'
 #scale_gui_snmp_server_ip_port: '162'
 #scale_gui_snmp_server_community: 'Public'
+
+
+scale_gui_cert_hc_vault: false

@@ -1,7 +1,7 @@
 ---
 galaxy_info:
   role_name: spectrum_scale_gui
-  author: Achim Christ
+  author: Achim Christ and Ole Kristian Myklebust
   description: Role for installing and configuring IBM Spectrum Scale (GPFS) Graphical User Interface (GUI)
   company: IBM
   license: MIT

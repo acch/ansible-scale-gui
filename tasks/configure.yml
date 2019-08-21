@@ -490,7 +490,7 @@
     - scale_gui_ansible_task_output | bool
 
 - name: config | Email recipients - Add E-mail recipients
-  command: /usr/lpp/mmfs/gui/cli/mkemailuser "{{ scale_gui_email_recipients_name }}" --address "{{ scale_gui_email_recipients_address }}" --components "{{ scale_gui_email_recipients_components }}""{{ scale_gui_email_recipients_components_security_level }}" --reports "{{ scale_gui_email_recipients_reports }}" --quotathreshold "{{ scale_gui_email_recipients_quotathreshold }}"
+  command: /usr/lpp/mmfs/gui/cli/mkemailuser "{{ scale_gui_email_recipients_name }}" --address "{{ scale_gui_email_recipients_address }}" --components "{{ scale_gui_email_recipients_components_security_level }}" --reports "{{ scale_gui_email_recipients_reports }}" "{{ scale_gui_email_recipients_quotaNotification }}" --quotathreshold "{{ scale_gui_email_recipients_quotathreshold }}"
   register: conf_email_recipient
   run_once: true
   #delegate_to: "{{ play_hosts | first }}"
@@ -544,3 +544,95 @@
     - scale_gui_collector | bool
     - scale_gui_snmp_notification | bool
     - " 'EFSSG0100I There are no values to return' in conf_snmp_notifications_check.stdout"
+
+#
+# Integrate of HasiCorp - Consul and Vault.
+#
+# Create local admin user and get and write password to Vault
+- name: configure | Hasicorp Vault - Create local admin user and get and write password to Vault
+  shell: |
+    vault kv put secret/private/{{ computed.name }}/gui gui_admin_pwd=$(vault write -field='value' gen/password length=12 symbols=0)
+    /usr/lpp/mmfs/gui/cli/mkuser "{{ scale_gui_admin_hc_vault_user }}" -g "{{ scale_gui_admin_hc_vault_role }}" -p $(vault kv get -field='gui_admin_pwd' secret/private/{{ computed.name }}/gui)
+  run_once: True
+  ignore_errors: yes
+  when:
+    - scale_gui_collector | bool
+    - scale_gui_admin_hc_vault_user is defined
+    - scale_gui_admin_user is not defined
+
+#
+# Generation and Import of GUI Certificate from Hasicorp Vault. This needs to be run from Terraform.
+#
+
+#
+# Inspect existing cluster and inventory
+#
+- name: cluster | Find existing cluster
+  shell: /usr/lpp/mmfs/bin/mmlscluster -Y | grep -v HEADER | grep clusterSummary | cut -d ':' -f 7
+  register: scale_cluster_clustername
+  changed_when: false
+  failed_when: false
+
+- name: config  | Verify if GUI have allready imported GUI certficate
+  shell: /usr/lpp/mmfs/gui/cli/lshttpskeystore -c {{ scale_cluster_clustername.stdout }}
+  register: lshttpskeystore
+  run_once: True
+  ignore_errors: yes
+  when:
+    - scale_gui_collector | bool
+    - scale_gui_cert_hc_vault | bool
+
+- name: config | Verify if GUI have allready imported GUI certficate - output
+  run_once: True
+  debug:
+    msg: "{{ lshttpskeystore.stdout }}"
+  when:
+    - scale_gui_collector | bool
+    - scale_gui_cert_hc_vault | bool
+    - scale_gui_ansible_task_output | bool
+
+# GUI needs to be initialized.
+- block:
+    - name: Config | GUI - Cleanup existing key's
+      file:
+        path: "{{ item }}"
+        state: absent
+      with_items:
+        - /etc/ssl/certs/scale_gui.p12
+        - /opt/ibm/wlp/usr/servers/gpfsgui/resources/security/scale_gui.jks
+      run_once: True
+      when:
+        - scale_gui_collector | bool
+        - scale_gui_cert_hc_vault | bool
+
+    - name: config | GUI - Request Vault TLS certificate for GUI
+      shell: |
+        vault write pki/issue/pki common_name=$(hostname -f) ttl=80h format=pem -format=json > /tmp/certs.json
+        jq -r '.data.certificate' /tmp/certs.json > /etc/ssl/certs/guicert.crt
+        jq -r '.data.private_key' /tmp/certs.json > /etc/ssl/certs/guikey.key
+        export PKCS_PWD=$(vault write -field='value' gen/password length=12 symbols=0)
+        vault kv put secret/private/{{ computed.name }}/tls tls_pkcs_pwd=$PKCS_PWD
+      run_once: True
+      ignore_errors: yes
+      when:
+        - scale_gui_collector | bool
+        - scale_gui_cert_hc_vault | bool
+
+    - name: config | GUI - Update TLS Certificate in GUI Keystors
+      shell: |
+        export PKCS_PWD=$(vault kv get -field='tls_pkcs_pwd' secret/private/{{ computed.name }}/tls)
+        openssl pkcs12 -export -in /etc/ssl/certs/guicert.crt -inkey /etc/ssl/certs/guikey.key -out /etc/ssl/certs/scale_gui.p12 -password pass:$PKCS_PWD
+        /usr/lpp/mmfs/java/jre/bin/keytool -importkeystore -srckeystore /etc/ssl/certs/scale_gui.p12 -destkeystore /opt/ibm/wlp/usr/servers/gpfsgui/resources/security/scale_gui.jks -srcstoretype pkcs12 -deststorepass $PKCS_PWD -srcstorepass $PKCS_PWD -noprompt
+        export ENCODED_SCALE_PWD=$(/opt/ibm/wlp/bin/securityUtility encode $PKCS_PWD)
+        /usr/lpp/mmfs/gui/cli/sethttpskeystore /opt/ibm/wlp/usr/servers/gpfsgui/resources/security/scale_gui.jks --password $ENCODED_SCALE_PWD -c {{ scale_cluster_clustername.stdout }}
+      environment:
+        JAVA_HOME: /usr/lpp/mmfs/java/jre
+      run_once: True
+      ignore_errors: yes
+      when:
+        - scale_gui_collector | bool
+        - scale_gui_cert_hc_vault | bool
+  when:
+    - " 'defaultKeyStore' not in lshttpskeystore.stdout"
+    - scale_gui_collector | bool
+    - scale_gui_cert_hc_vault | bool
