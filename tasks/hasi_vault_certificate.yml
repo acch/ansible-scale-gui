@@ -21,8 +21,7 @@
   run_once: True
   debug:
     msg: "{{ scale_gui_certificate_lshttpskeystore_verify.stdout }}"
-  when:
-    - scale_gui_ansible_task_output | bool
+    verbosity: 2
 
 # GUI needs to be initialized.
 - block:

@@ -6,12 +6,11 @@
 #
 
 - block:  ## run_once: true
-    - block:  ## run_once: true
-        - name: install | Check for repository installation method
-          set_fact:
-            scale_installmethod: repository
-          when:
-            - scale_install_zimon_repository_url is defined
+    - name: install | Check for repository installation method
+      set_fact:
+        scale_installmethod: repository
+      when:
+        - scale_install_zimon_repository_url is defined
 
     - name: install | Check installation method
       assert:
@@ -37,7 +36,7 @@
 # Install or update RPMs
 #
 - name: install | Install GPFS GUI RPMs
-  yum:
+  package:
     name: "{{ scale_install_all_rpms }}"
     state: present
   when: ansible_pkg_mgr == 'yum'

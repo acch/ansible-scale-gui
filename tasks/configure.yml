@@ -41,17 +41,17 @@
   run_once: true
   debug:
     msg: "{{ scale_gui_conf_pmcollector_check.stdout }}"
+    verbosity: 2
   when:
     - scale_gui_collector | bool
-    - scale_gui_ansible_task_output | bool
 
 - name: configure | Check if initialize performance collection is already configured - Output stderr
   run_once: true
   debug:
     msg: "{{ scale_gui_conf_pmcollector_check.stderr }}"
+    verbosity: 2
   when:
     - scale_gui_collector | bool
-    - scale_gui_ansible_task_output | bool
 
 #TODO: Ole Kristian: added a check for output, but are having problems using the ( collector_nodes | join(',') ) to use when adding nodes.
 - name: configure | Initialize performance collection
@@ -81,8 +81,7 @@
   run_once: true
   debug:
     msg: "{{ scale_gui_conf_perfmon_check.stdout }}"
-  when:
-    - scale_gui_ansible_task_output | bool
+    verbosity: 2
 
 - name: configure | Enable nodes for performance collection #TODO discuss: should it be dependent on scale_gui_collector?
   vars:

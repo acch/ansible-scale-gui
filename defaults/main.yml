@@ -27,9 +27,9 @@ scale_gui_sensors_rpms:
 ## you'll likely want to define per-node roles in your inventory
 scale_gui_collector: false
 
-## Enabled output from Ansible task in stdout and stderr for some tasks.
-## this is handy for se output from changes and checks
-scale_gui_ansible_task_output: false
+## To Enabled output from Ansible task in stdout and stderr for some tasks.
+## Run the playbook with -vv
+
 
 
 

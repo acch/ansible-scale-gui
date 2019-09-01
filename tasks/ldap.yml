@@ -13,8 +13,7 @@
   run_once: true
   debug:
     msg: "{{ scale_gui_conf_lsldap.stdout.split('\n') }}"
-  when:
-    - scale_gui_ansible_task_output | bool
+    verbosity: 2
 
 - name: LDAP | Integrate GUI with LDAP
   shell: |
@@ -43,7 +42,7 @@
 #
 # Configure LDAP Groups to security roles for Spectrum Scale GUI
 #
-- name: LDAP | Check if GUI have created user groups and roles for LDAP #TODO check for group from variable instead
+- name: LDAP | Check if GUI have created user groups and roles for LDAP
   shell: /usr/lpp/mmfs/gui/cli/lsusergrp -Y | grep -v HEADER |cut -d ':' -f 7
   register: scale_gui_conf_lsusergrp
   failed_when: false
@@ -55,11 +54,10 @@
   run_once: true
   debug:
     msg: "{{ scale_gui_conf_lsusergrp.stdout.split('\n') }}"
-  when:
-    - scale_gui_ansible_task_output | bool
+    verbosity: 2
 
 - name: LDAP | Map roles to LDAP groups - Role administrator
-  command: '/usr/lpp/mmfs/gui/cli/mkusergrp "{{ scale_gui_groups.administrator }}" --role administrator'
+  command: '/usr/lpp/mmfs/gui/cli/mkusergrp "{{ scale_gui_groups.administrator }}" --role admin'
   environment:
     JAVA_HOME: /usr/lpp/mmfs/java/jre
   run_once: true
@@ -69,6 +67,18 @@
   when:
     - scale_gui_groups.administrator is defined
     - " scale_gui_groups.administrator not in scale_gui_conf_lsusergrp.stdout"
+
+- name: LDAP | Map roles to LDAP groups - Role UserAdmin
+  command: '/usr/lpp/mmfs/gui/cli/mkusergrp "{{ scale_gui_groups.useradmin }}" --role useradmin'
+  environment:
+    JAVA_HOME: /usr/lpp/mmfs/java/jre
+  run_once: true
+  register: scale_gui_ldap_role_mapping_useradmin
+  failed_when: " 'EFSSG1000I' not in scale_gui_ldap_role_mapping_useradmin.stdout"
+  ignore_errors: yes
+  when:
+    - scale_gui_groups.useradmin is defined
+    - " scale_gui_groups.useradmin not in scale_gui_conf_lsusergrp.stdout"
 
 - name: LDAP | Map roles to LDAP groups - Role Securityadmin
   command: '/usr/lpp/mmfs/gui/cli/mkusergrp "{{ scale_gui_groups.securityadmin }}" --role securityadmin'
@@ -141,15 +151,3 @@
   when:
     - scale_gui_groups.protocoladmin is defined
     - " scale_gui_groups.protocoladmin not in scale_gui_conf_lsusergrp.stdout"
-
-- name: LDAP | Map roles to LDAP groups - Role UserAdmin
-  command: '/usr/lpp/mmfs/gui/cli/mkusergrp "{{ scale_gui_groups.useradmin }}" --role useradmin'
-  environment:
-    JAVA_HOME: /usr/lpp/mmfs/java/jre
-  run_once: true
-  register: scale_gui_ldap_role_mapping_useradmin
-  failed_when: " 'EFSSG1000I' not in scale_gui_ldap_role_mapping_useradmin.stdout"
-  ignore_errors: yes
-  when:
-    - scale_gui_groups.useradmin is defined
-    - " scale_gui_groups.useradmin not in scale_gui_conf_lsusergrp.stdout"

@@ -9,12 +9,11 @@
   failed_when: false
   changed_when: false
 
-- name: EMAIL | Verify if e-mail notifications is allready enabled - Output
+- name: EMAIL | Check if e-mail notifications is allready enabled - Output
   run_once: true
   debug:
     msg: "{{ scale_gui_conf_email_notifications_check.stdout}}"
-  when:
-    - scale_gui_ansible_task_output | bool
+    verbosity: 2
 
 - name: EMAIL | Configure E-Mail notifications
   command: /usr/lpp/mmfs/gui/cli/mkemailserver "{{ scale_gui_email.name }}" --address "{{ scale_gui_email.ipaddress }}" --port "{{ scale_gui_email.ipport }}" --reply "{{ scale_gui_email.replay_email_address }}" --contact "{{ scale_gui_email.contact_name }}" --subject "{{ scale_gui_email.subject }}"  --login "{{ scale_gui_email.sender_login_id }}" --password "{{ scale_gui_email.password }}" --header "{{ scale_gui_email.headertext | default() }}" --footer "{{ scale_gui_email.footertext | default() }}"
@@ -39,8 +38,7 @@
   run_once: true
   debug:
     msg: "{{ scale_gui_conf_email_recipient_check.stdout}}"
-  when:
-    - scale_gui_ansible_task_output | bool
+    verbosity: 2
 
 - name: EMAIL | Recipients - Add E-mail recipients
   command: /usr/lpp/mmfs/gui/cli/mkemailuser "{{ scale_gui_email_recipients.name }}" --address "{{ scale_gui_email_recipients.address }}" --components "{{ scale_gui_email_recipients.components_security_level }}" --reports "{{ scale_gui_email_recipients.reports }}" "{{ scale_gui_email_recipients.quotaNotification }}" --quotathreshold "{{ scale_gui_email_recipients.quotathreshold }}"

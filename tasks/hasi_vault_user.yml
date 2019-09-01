@@ -14,8 +14,7 @@
   run_once: true
   debug:
     msg: "{{ scale_gui_vault_admin_check.stdout.split('\n') }}"
-  when:
-    - scale_gui_ansible_task_output | bool
+    verbosity: 2
 
 ## Computed.Name is used to determine the provisioned environment
 -

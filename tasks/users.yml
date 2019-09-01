@@ -1,8 +1,8 @@
 #
-# Create Local GUI Admin User
+# Check if GUI Users is Created
 #
 
-- name: users | Local GUI users - Check if local user is allready created
+- name: users | Check if local user is allready created
   shell: /usr/lpp/mmfs/gui/cli/lsuser -Y | grep -v HEADER | cut -d ':' -f 7
   register: scale_gui_conf_gui_user_check
   run_once: true
@@ -11,14 +11,18 @@
   when:
     - scale_gui_admin_user is defined
 
-- name: users | Local GUI users - Check if local admin user is allready created - output
+- name: users | Check if local admin user is allready created - output
   run_once: true
   debug:
     msg: "{{ scale_gui_conf_gui_user_check.stdout.split('\n') }}"
+    verbosity: 2
   when:
-    - scale_gui_ansible_task_output | bool
     - scale_gui_admin_user is defined
 
+#
+# Create Local GUI Admin User
+#
+-
 - name: users | Create local Admin user for GUI
   shell: /usr/lpp/mmfs/gui/cli/mkuser "{{ scale_gui_admin_user }}" -g "{{ scale_gui_admin_role }}" -p "{{ scale_gui_admin_password }}"
   run_once: true

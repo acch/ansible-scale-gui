@@ -29,8 +29,15 @@ The following installation methods are available:
 
 
 Future plans:
-- **Upgrade and Disable services.**
+- **Upgrade, Change and Disable services.**
 - **Adding nodes to Performance sensors**
+
+Installation
+------
+Installation
+
+$ ansible-galaxy install acch.ansible.scale-gui
+
 
 
 Requirements
@@ -38,7 +45,7 @@ Requirements
 
 As there's no public repository available, you'll need to download Spectrum Scale (GPFS) packages from the IBM website. Visit https://www.ibm.com/support/fixcentral and search for 'IBM Spectrum Scale (Software defined storage)'.
 
-Local Scale Repo
+Local Spectrum Scale Repo
 -------
 To created a local repo on a web server:
 
@@ -62,7 +69,10 @@ Defining the variable scale_version is mandatory.
 - Furthermore, you'll need to configure an installation method by defining one of the following variables:
     - `scale_install_repository_url:` this needs to pointed to `zimon_rpms` folder, as orginal library from download cant find the correct packages.
  
+Role Dependencies
+----
 
+None. but could be included with acch.spectrum.scale.
 
 Example Playbook
 ----------------
@@ -213,10 +223,10 @@ scale_gui_password_policy:
   maxAge: '90'
 ```
 
+
 For all functions:
 
-```
-
+``
 scale_gui_password_policy_change: ## To enable Change of Password Policy
 scale_gui_password_policy:
   minLength: '6' ## Minimum password length
@@ -239,9 +249,6 @@ Enable Active Directory Integration og GUI
 you'll likely want to define in your inventory
 
 ```
-
-
-``
 scale_gui_ldap_integration: true
 scale_gui_ldap:
   name: 'myad' ##Alias for your LDAP/AD server
@@ -257,18 +264,17 @@ scale_gui_ldap:
 
 Managing GUI users in an external AD or LDAP  Parameters
 
-
-```
 Parameter                Description
-      id                 The id for the LDAP configuration.
-    --host               The IP address or host name of the LDAP server.
-    --baseDn             BasedDn string for the repository.
-    --bindDn             BindDn string for the authentication user.
-    --bindPassword       Password of the authentication user.
-    --port               Port number of the LDAP. Default is 389 or 636 over SSL.
-    --type               Repository type (ad, ids, domino, secureway, iplanet, netscape, edirectory or custom). Default is ad.
-    --keystore           Location with file name of the keystore file (.jks, .p12 or .pfx).
-```
+- **name:**               Alias for your LDAP/AD server
+- **host:**               The IP address or host name of the LDAP server.
+- **baseDn:**             BasedDn string for the repository.
+- **bindDn:**             BindDn string for the authentication user.
+- **bindPassword:**       Password of the authentication user.
+- **port:**               Port number of the LDAP. Default is 389
+- **type:**               Repository type (ad, ids, domino, secureway, iplanet, netscape, edirectory or custom). Default is ad.
+- **securekeystore:**     Location with file name of the keystore file (.jks, .p12 or .pfx).
+- **secureport:**         Port number of the LDAP.  636 over SSL.
+
 
 ----------------------------------------------------------------------------------------------
 
@@ -324,22 +330,22 @@ E-Mail notifications Parameters.
  
 
 - Change parameter for your environments, the Mandatory fields are marked.
-```
-## Parameters for configure E-Mail notification
-## Enable E-mail notifications in Spectrum Scale GUI
-scale_gui_email_notification: true
-scale_gui_email:
-  name: 'SMTP_1'                ## Mandatory Default is SMTP_1
-  ipaddress: 'emailserverhost'  ## Mandatory
-  ipport: '25'                  ## Mandatory
-  replay_email_address: "scale-server-test@acme.com" ## Mandatory
-  contact_name: 'scale-contact-person'               ## Mandatory
-  subject: "&cluster&message"   ## Variables:  &message &messageId &severity &dateAndTime &cluster&component
-  sender_login_id:
-  password:
-  headertext:
-  footertext:
-```
+    ```
+    ## Parameters for configure E-Mail notification
+    ## Enable E-mail notifications in Spectrum Scale GUI
+    scale_gui_email_notification: true
+    scale_gui_email:
+      name: 'SMTP_1'                ## Mandatory Default is SMTP_1
+      ipaddress: 'emailserverhost'  ## Mandatory
+      ipport: '25'                  ## Mandatory
+      replay_email_address: "scale-server-test@acme.com" ## Mandatory
+      contact_name: 'scale-contact-person'               ## Mandatory
+      subject: "&cluster&message"   ## Variables:  &message &messageId &severity &dateAndTime &cluster&component
+      sender_login_id:
+      password:
+      headertext:
+      footertext:
+    ```
 
 
 ----------------------------------------------------------------------------------------------
@@ -360,7 +366,7 @@ Options:
    - The value `scale_gui_email_recipients_components_security_level: ` Need to contain the **Component** and the **Warning/Security Level**
         - Chose component like **SCALEMGMT** and the security_level of WARNING wil be **SCALEMGMT=ERROR**
         - Security level: Chose the lowest severity of an event for which you want to receive and email.  Example, selectin Tip includes events with severity Tip, Warning, and Error in the email.
-            - The Severity level is as follows: : **INFO**, **TIP**, **WARNING**, **ERROR**
+        - The Severity level is as follows: : **INFO**, **TIP**, **WARNING**, **ERROR**
 
     List of all security levels:
     ```
@@ -443,7 +449,7 @@ To get output from Ansible task in stdout and stderr for some tasks. add  `scale
 This role stores configuration files in `/var/tmp` on the first host in the play. These configuration files are kept to determine if definitions have changed since the previous run, and to decide if it's necessary to run certain Spectrum Scale commands (again). When experiencing problems one can simply delete these configuration files from `/var/tmp` in order to clear the cache &mdash; this will force re-application of all definitions upon the next run. As a downside, the next run may take longer than expected as it might re-run unnecessary Spectrum Scale commands. Doing so will automatically re-generate the cache.
 
 If you experience  "msg": "Unable to start service gpfsgui: Job for gpfsgui.service failed because a timeout was exceeded. See \"systemctl status gpfsgui.service\" and \"journalctl -xe\" for details.\n"}`
-this is mostly cause by Performance issue in your environments like overcommitment on your hypervisors. if the Service takes to long time to start the systemd times out. 
+this is mostly cause by Performance issue in your environments like overcommitment on your hypervisors, if the Service takes to long time to start the systemd times out, try to rerun the playbook.
 
 Please use the [issue tracker](https://github.com/acch/ansible-scale/issues) to ask questions, report bugs and request features.
 
