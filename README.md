@@ -52,7 +52,7 @@ To created a local repo on a web server:
 ```
 cd /your/webserver/folder
 # Download the Spectrum Scale install files. get directlink or copy it into your server 
-wget ------not public -----
+wget ------Spectrum Scale Binary -----
 sh ./Spectrum_Scale_Data_Management-5.0.X.X-x86_64-Linux-install --dir ./SpectrumScaleRpms/5.0.X.X/ --silent
 yum install -y createrepo
 cd SpectrumScaleRpms/5.0.X.X/
@@ -226,21 +226,21 @@ scale_gui_password_policy:
 
 For all functions:
 
-``
-scale_gui_password_policy_change: ## To enable Change of Password Policy
-scale_gui_password_policy:
-  minLength: '6' ## Minimum password length
-  maxAge: '90'   ## Maximum password age
-  minAge: '0'    ## Minimum password age
-  remember: '3'  ## Remember old passwords
-  minUpperChars: '0'   ## Minimum upper case characters
-  minLowerChars: '0'   ## Minimum lower case characters
-  minSpecialChars: '0' ## Minimum special case characters
-  minDigits: '0'   ## Minimum digits
-  maxRepeat: '0'   ## Maximum number of repeat characters
-  minDiff: '1'     ## Minimum different characters with respect to old password
-  rejectOrAllowUserName: '--rejectUserName'  ## either  '--rejectUserName' or '--allowUserName'
-```
+   ```
+    scale_gui_password_policy_change: ## To enable Change of Password Policy
+    scale_gui_password_policy:
+      minLength: '6' ## Minimum password length
+      maxAge: '90'   ## Maximum password age
+      minAge: '0'    ## Minimum password age
+      remember: '3'  ## Remember old passwords
+      minUpperChars: '0'   ## Minimum upper case characters
+      minLowerChars: '0'   ## Minimum lower case characters
+      minSpecialChars: '0' ## Minimum special case characters
+      minDigits: '0'   ## Minimum digits
+      maxRepeat: '0'   ## Maximum number of repeat characters
+      minDiff: '1'     ## Minimum different characters with respect to old password
+      rejectOrAllowUserName: '--rejectUserName'  ## either  '--rejectUserName' or '--allowUserName'
+   ```
 ----------------------------------------------------------------------------------------------
 
 LDAP information for Managing GUI users in an external AD or LDAP server
@@ -287,17 +287,17 @@ You'll likely want to define this in your host inventory
 
 Add the mappings that you want and replace the scale-* with your ldap groups. 
 
-```
-scale_gui_groups:
-  administrator: 'scale-admin'
-  securityadmin: 'scale-securityadmin'
-  storageadmin: 'scale-storage-administrator'
-  snapadmin: 'scale-snapshot-administrator'
-  data_access: 'scale-data-access'
-  monitor: 'scale-monitor'
-  protocoladmin: 'scale-protocoladmin'
-  useradmin: 'scale-useradmin'
-```
+   ```
+    scale_gui_groups:
+      administrator: 'scale-admin'
+      securityadmin: 'scale-securityadmin'
+      storageadmin: 'scale-storage-administrator'
+      snapadmin: 'scale-snapshot-administrator'
+      data_access: 'scale-data-access'
+      monitor: 'scale-monitor'
+      protocoladmin: 'scale-protocoladmin'
+      useradmin: 'scale-useradmin'
+   ```
 
 The following are the default user groups:
 
@@ -314,7 +314,7 @@ The following are the default user groups:
 ----------------------------------------------------------------------------------------------
 
 E-Mail notifications Parameters.
------
+-------
 - The email feature transmits operational and error-related data in the form of an event notification email.
     - Email notifications can be customized by setting a custom header and footer for the emails and customizing the subject by selecting and combining from the following variables: &message, &messageId, &severity, &dateAndTime, &cluster and &component.
 
@@ -330,7 +330,7 @@ E-Mail notifications Parameters.
  
 
 - Change parameter for your environments, the Mandatory fields are marked.
-    ```
+     ```
     ## Parameters for configure E-Mail notification
     ## Enable E-mail notifications in Spectrum Scale GUI
     scale_gui_email_notification: true
@@ -345,7 +345,7 @@ E-Mail notifications Parameters.
       password:
       headertext:
       footertext:
-    ```
+     ```
 
 
 ----------------------------------------------------------------------------------------------
@@ -356,11 +356,10 @@ E-Mail Recipients Parameters
   Add all of the parameters change them to your environment. See example below.
 
 
-Options:  
+**Options:**  
 - **NAME**: Name of the email Recipients
 
 - **Address:** userAddress Specifies the address of the e-mail user
-
 
 - **Components_security_level**
    - The value `scale_gui_email_recipients_components_security_level: ` Need to contain the **Component** and the **Warning/Security Level**
@@ -432,13 +431,16 @@ HasiCorp Integration - HTTPs Certificate from Vault.
 - The Scale host need to be included in Hasi Vault and the Ansible playbook need to have the **computed.name** variables, normaly the playbook is then run from Terraform to get values. 
 
 Change the values to true to enable the https certificate import.
- - **scale_gui_cert_hc_vault:** true
+ ```
+ scale_gui_cert_hc_vault: true
+ ```
+ 
 
 
 Limitations
 -----------
 
-This role can (currently) only be used to create new clusters. 
+This role can (currently) have some limitation so that running it on existing environment it maybe fail.  
 
 
 Troubleshooting
