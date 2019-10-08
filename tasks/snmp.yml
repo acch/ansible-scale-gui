@@ -1,4 +1,4 @@
-
+---
 #
 # Inspect inventory
 #
@@ -28,7 +28,7 @@
     collector_nodes: "{{ groups['scale_gui_collectors'] | map('extract', hostvars, 'scale_daemon_nodename') | list }}"
   run_once: true
   debug:
-    msg: "{{ scale_gui_conf_snmp_notifications_check.stdout.split('\n')}}"
+    msg: "{{ scale_gui_conf_snmp_notifications_check.stdout.split('\n') }}"
     verbosity: 2
 
 - name: SNMP | Configure SNMP notifications

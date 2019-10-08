@@ -30,8 +30,11 @@ scale_gui_collector: false
 ## To Enabled output from Ansible task in stdout and stderr for some tasks.
 ## Run the playbook with -vv
 
+# Hide the Callhome not enabled
+scale_gui_hide_tip_callhome: false
 
-
+## Compute RPM version from Spectrum Scale version
+scale_rpmversion: "{{ scale_version | regex_replace('^([0-9.]+)\\.([0-9])$', '\\1-\\2') }}"
 
 
 ##------------------------------GUI_USERS--------------------------------

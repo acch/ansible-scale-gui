@@ -120,3 +120,13 @@
   failed_when: "scale_gui_conf_initgui.rc != 0 and 'EFSSG1000I' not in scale_gui_conf_initgui.stdout"
   when: scale_gui_collector | bool
   #TODO check: don't know what to check if the init is already run
+
+#
+# Hide the CallHome TIP in the GUI, so all is healthy
+#
+- name: configure | Hide the CallHome TIP in the GUI
+  command: 'mmhealth event hide callhome_not_enabled'
+  register: scale_gui_conf_hide_tip_callhome
+  ignore_errors: true
+  when: scale_gui_hide_tip_callhome | bool
+    #TODO check: don't know what to check if the init is already run

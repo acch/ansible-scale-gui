@@ -1,5 +1,6 @@
+---
 #
-# Generation and Import of GUI Certificate from Hasicorp Vault. This needs to be run from Terraform.
+# Generation and Import of GUI Certificate from Hasicorp Vault. You need to have Vault configured
 #
 # Inspect existing cluster and inventory
 #

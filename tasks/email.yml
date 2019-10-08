@@ -1,3 +1,4 @@
+---
 #
 # Configure E-mail notifications in Spectrum Scale GUI
 #
@@ -12,7 +13,7 @@
 - name: EMAIL | Check if e-mail notifications is allready enabled - Output
   run_once: true
   debug:
-    msg: "{{ scale_gui_conf_email_notifications_check.stdout}}"
+    msg: "{{ scale_gui_conf_email_notifications_check.stdout }}"
     verbosity: 2
 
 - name: EMAIL | Configure E-Mail notifications
@@ -37,7 +38,7 @@
 - name: EMAIL | Recipients - Check if e-mail recipients is allready created - Output
   run_once: true
   debug:
-    msg: "{{ scale_gui_conf_email_recipient_check.stdout}}"
+    msg: "{{ scale_gui_conf_email_recipient_check.stdout }}"
     verbosity: 2
 
 - name: EMAIL | Recipients - Add E-mail recipients
