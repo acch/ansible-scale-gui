@@ -22,6 +22,4 @@ galaxy_info:
     - gui
 
 dependencies:
-# - acch.spectrum_scale
-# - ansible-scale
-#  - spectrum-scale
+  - acch.spectrum_scale
