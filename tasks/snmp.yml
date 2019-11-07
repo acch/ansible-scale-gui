@@ -19,14 +19,16 @@
   vars:
     collector_nodes: "{{ groups['scale_gui_collectors'] | map('extract', hostvars, 'scale_daemon_nodename') | list }}"
   register: scale_gui_conf_snmp_notifications_check
-  run_once: true
+  #run_once: true
+  delegate_to: "{{ groups['scale_gui_master'].0 }}"
   failed_when: false
   changed_when: false
 
 - name: SNMP | Check if SNMP notifications is allready enabled - Output
   vars:
     collector_nodes: "{{ groups['scale_gui_collectors'] | map('extract', hostvars, 'scale_daemon_nodename') | list }}"
-  run_once: true
+  #run_once: true
+  delegate_to: "{{ groups['scale_gui_master'].0 }}"
   debug:
     msg: "{{ scale_gui_conf_snmp_notifications_check.stdout.split('\n') }}"
     verbosity: 2
@@ -36,7 +38,8 @@
     collector_nodes: "{{ groups['scale_gui_collectors'] | map('extract', hostvars, 'scale_daemon_nodename') | list }}"
   command: /usr/lpp/mmfs/gui/cli/mksnmpserver SNMP_1 --ip "{{ scale_gui_snmp_server.ip_adress }}" --port "{{ scale_gui_snmp_server.ip_port }}" --community "{{ scale_gui_snmp_server.community }}"
   register: scale_gui_conf_snmp_notifications
-  run_once: true
+  #run_once: true
+  delegate_to: "{{ groups['scale_gui_master'].0 }}"
   failed_when: " 'EFSSG1000I' not in scale_gui_conf_snmp_notifications.stdout"
   ignore_errors: yes
   when:

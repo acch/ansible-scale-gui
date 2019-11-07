@@ -2,7 +2,7 @@
 # Configure GUI service and performance collection
 
 # Make default variables available in hostvars
-- name: cluster | Set default collector role
+- name: configure | Set default collector role
   set_fact:
     scale_gui_collector: "{{ scale_gui_collector }}"
   when: hostvars[inventory_hostname].scale_gui_collector is undefined
@@ -19,6 +19,17 @@
   changed_when: false
 
 #
+# Define GUIs Master node, this is for tasks that only need to run once.
+# When using run_once it always take the first node of all nodes, and that is not always desirable.
+#
+- name: configure | Define GUIs Master node
+  add_host:
+    name: "{{ item }}"
+    groups: scale_gui_master
+  when: hostvars[item].scale_gui_collector | bool
+  with_items: "{{ ansible_play_hosts }}"
+
+#
 # Configure performance collection
 #
 - name: configure | Start and enable GUI service
@@ -31,14 +42,16 @@
 - name: configure | Check if initialize performance collection is already configured.
   shell: "/usr/lpp/mmfs/bin/mmperfmon config show | grep colCandidates"
   register: scale_gui_conf_pmcollector_check
-  run_once: true
+  #run_once: true
+  delegate_to: "{{ groups['scale_gui_master'].0 }}"
   failed_when: false
   changed_when: false
   when:
     - scale_gui_collector | bool
 
 - name: configure | Check if initialize performance collection is already configured - Output stdout
-  run_once: true
+  #run_once: true
+  delegate_to: "{{ groups['scale_gui_master'].0 }}"
   debug:
     msg: "{{ scale_gui_conf_pmcollector_check.stdout }}"
     verbosity: 2
@@ -46,24 +59,27 @@
     - scale_gui_collector | bool
 
 - name: configure | Check if initialize performance collection is already configured - Output stderr
-  run_once: true
+  #run_once: true
+  delegate_to: "{{ groups['scale_gui_master'].0 }}"
   debug:
     msg: "{{ scale_gui_conf_pmcollector_check.stderr }}"
     verbosity: 2
   when:
     - scale_gui_collector | bool
 
-#TODO: Ole Kristian: added a check for output, but are having problems using the ( collector_nodes | join(',') ) to use when adding nodes.
+###TODO: Ole Kristian: added a check for output, but are having problems using the ( collector_nodes | join(',') ) to use when adding nodes.
+
 - name: configure | Initialize performance collection
   vars:
     collector_nodes: "{{ groups['scale_gui_collectors'] | list }}"
   command: /usr/lpp/mmfs/bin/mmperfmon config generate --collectors {{ collector_nodes | join(',') }}
   register: scale_gui_conf_pmcollector
+  delegate_to: "{{ groups['scale_gui_master'].0 }}"
   when:
     - scale_gui_collector | bool
     - " 'mmperfmon: There is no performance monitoring configuration data.' in scale_gui_conf_pmcollector_check.stderr"
 #- " ( collector_nodes | join(',') ) not in scale_gui_conf_pmcollector_check.stdout"
-  run_once: true
+  #run_once: true
 
 #
 # PM sensors - all host will now have Performance Monitoring installed and configured.
@@ -73,7 +89,8 @@
     sensor_nodes: "{{ ansible_play_hosts | list }}"
   shell: "/usr/lpp/mmfs/bin/mmlscluster -Y | grep -v HEADER | grep clusterNode |grep {{ sensor_nodes | first }} | cut -d ':' -f 14"
   register: scale_gui_conf_perfmon_check
-  run_once: true
+  #run_once: true
+  delegate_to: "{{ groups['scale_gui_master'].0 }}"
   failed_when: false
   changed_when: false
 
@@ -88,7 +105,8 @@
     sensor_nodes: "{{ ansible_play_hosts | list }}"
   command: /usr/lpp/mmfs/bin/mmchnode --perfmon -N {{ sensor_nodes | join(',') }}
   register: scale_gui_conf_enable_node_perfmon
-  run_once: true
+  #run_once: true
+  delegate_to: "{{ groups['scale_gui_master'].0 }}"
   ignore_errors: yes
   failed_when: "scale_gui_conf_enable_node_perfmon.rc != 0 and 'Propagating the cluster configuration data to all affected nodes.' not in scale_gui_conf_enable_node_perfmon.stdout"
   when:
@@ -118,6 +136,7 @@
   command: /usr/lpp/mmfs/gui/cli/initgui
   register: scale_gui_conf_initgui
   failed_when: "scale_gui_conf_initgui.rc != 0 and 'EFSSG1000I' not in scale_gui_conf_initgui.stdout"
+  delegate_to: "{{ groups['scale_gui_master'].0 }}"
   when: scale_gui_collector | bool
   #TODO check: don't know what to check if the init is already run
 
@@ -125,8 +144,9 @@
 # Hide the CallHome TIP in the GUI, so all is healthy
 #
 - name: configure | Hide the CallHome TIP in the GUI
-  command: 'mmhealth event hide callhome_not_enabled'
+  command: '/usr/lpp/mmfs/bin/mmhealth event hide callhome_not_enabled'
   register: scale_gui_conf_hide_tip_callhome
   ignore_errors: true
+  delegate_to: "{{ groups['scale_gui_master'].0 }}"
   when: scale_gui_hide_tip_callhome | bool
     #TODO check: don't know what to check if the init is already run

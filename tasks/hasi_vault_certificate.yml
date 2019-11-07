@@ -7,16 +7,18 @@
 - name: hasi_vault_certificate  | Find existing cluster
   shell: /usr/lpp/mmfs/bin/mmlscluster -Y | grep -v HEADER | grep clusterSummary | cut -d ':' -f 7
   register: scale_gui_scale_clustername
-  run_once: True
+  #run_once: True
   changed_when: false
   failed_when: false
+  delegate_to: "{{ groups['scale_gui_master'].0 }}"
 
 - name: hasi_vault_certificate | Verify if GUI have allready imported GUI certficate
   shell: /usr/lpp/mmfs/gui/cli/lshttpskeystore -c {{ scale_gui_scale_cluster_clustername.stdout }}
   register: scale_gui_certificate_lshttpskeystore_verify
-  run_once: True
+  #run_once: True
   changed_when: false
   ignore_errors: yes
+  delegate_to: "{{ groups['scale_gui_master'].0 }}"
 
 - name: hasi_vault_certificate | Verify if GUI have allready imported GUI certficate - output
   run_once: True
@@ -33,7 +35,7 @@
       with_items:
         - /etc/ssl/certs/scale_gui.p12
         - /opt/ibm/wlp/usr/servers/gpfsgui/resources/security/scale_gui.jks
-      run_once: True
+      #run_once: True
       ignore_errors: yes
 
     - name: hasi_vault_certificate | Request Vault TLS certificate for GUI
@@ -43,7 +45,7 @@
         jq -r '.data.private_key' /tmp/certs.json > /etc/ssl/certs/guikey.key
         export PKCS_PWD=$(vault write -field='value' gen/password length=12 symbols=0)
         vault kv put secret/private/{{ computed.name }}/tls tls_pkcs_pwd=$PKCS_PWD
-      run_once: True
+      #run_once: True
       ignore_errors: yes
 
     - name: hasi_vault_certificate | Update TLS Certificate in GUI Keystors
@@ -56,6 +58,7 @@
       environment:
         JAVA_HOME: /usr/lpp/mmfs/java/jre
       run_once: True
-      ignore_errors: yes
+      #ignore_errors: yes
+  delegate_to: "{{ groups['scale_gui_master'].0 }}"
   when:
     - " 'defaultKeyStore' not in scale_gui_certificate_lshttpskeystore_verify.stdout"

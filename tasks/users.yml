@@ -6,14 +6,16 @@
 - name: users | Check if local user is allready created
   shell: /usr/lpp/mmfs/gui/cli/lsuser -Y | grep -v HEADER | cut -d ':' -f 7
   register: scale_gui_conf_gui_user_check
-  run_once: true
+  #run_once: true
+  delegate_to: "{{ groups['scale_gui_master'].0 }}"
   failed_when: false
   changed_when: false
   when:
     - scale_gui_admin_user is defined
 
 - name: users | Check if local admin user is allready created - output
-  run_once: true
+  #run_once: true
+  delegate_to: "{{ groups['scale_gui_master'].0 }}"
   debug:
     msg: "{{ scale_gui_conf_gui_user_check.stdout.split('\n') }}"
     verbosity: 2
@@ -26,7 +28,8 @@
 -
 - name: users | Create local Admin user for GUI
   shell: /usr/lpp/mmfs/gui/cli/mkuser "{{ scale_gui_admin_user }}" -g "{{ scale_gui_admin_role }}" -p "{{ scale_gui_admin_password }}"
-  run_once: true
+  #run_once: true
+  delegate_to: "{{ groups['scale_gui_master'].0 }}"
   register: scale_gui_conf_createadmin
   failed_when: " 'EFSSG1000I' not in scale_gui_conf_createadmin.stdout"
   ignore_errors: yes
@@ -40,7 +43,8 @@
 
 - name: users | Create local user for GUI
   shell: /usr/lpp/mmfs/gui/cli/mkuser "{{ scale_gui_user_username }}" -g "{{ scale_gui_user_role }}" -p "{{ scale_gui_user_password }}"
-  run_once: true
+  #run_once: true
+  delegate_to: "{{ groups['scale_gui_master'].0 }}"
   register: scale_gui_conf_create_gui_user
   failed_when: " 'EFSSG1000I' not in scale_gui_conf_create_gui_user.stdout"
   ignore_errors: yes
