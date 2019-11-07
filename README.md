@@ -36,7 +36,7 @@ Installation
 ------
 Installation
 
-$ ansible-galaxy install acch.ansible.scale-gui
+$ ansible-galaxy install acch.spectrum_scale_gui
 
 
 
@@ -90,7 +90,7 @@ The simplest possible playbook to install Spectrum Scale on a node with GUI:
   scale_gui_collector: true
   roles:
     - acch.spectrum_scale
-    - acch.ansible-scale-gui
+    - acch.spectrum_scale_gui
 ```
 
 This will install all required packages and create a single-node Spectrum Scale cluster with GUI.
