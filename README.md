@@ -43,7 +43,15 @@ $ ansible-galaxy install acch.ansible.scale-gui
 Requirements
 -------------
 
-As there's no public repository available, you'll need to download Spectrum Scale (GPFS) packages from the IBM website. Visit https://www.ibm.com/support/fixcentral and search for 'IBM Spectrum Scale (Software defined storage)'.
+As there's no public repository available, So if you have subscription/license you'll can download Spectrum Scale (GPFS) packages from the IBM website. Visit https://www.ibm.com/support/fixcentral and search for 'IBM Spectrum Scale (Software defined storage)'.
+
+If you don't have an subscription you can now download the **IBM Spectrum Scale Developer Edition**
+
+
+- This edition provides all the features of the IBM Spectrum Scale Data Management Edition but it is limited to 12 TB per cluster.
+- There is no support from IBM for IBM Spectrum Scale Developer Edition.  Additionally, use in a production environment is prohibited. 
+- The Developer Edition can be access via https://www.ibm.com/us-en/marketplace/scale-out-file-and-object-storage
+
 
 Local Spectrum Scale Repo
 -------
