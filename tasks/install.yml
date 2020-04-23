@@ -39,4 +39,4 @@
   package:
     name: "{{ scale_install_all_rpms }}"
     state: present
-  when: ansible_pkg_mgr == 'yum'
+  when: ansible_pkg_mgr == 'yum' or ansible_pkg_mgr == 'dnf'

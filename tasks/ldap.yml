@@ -25,7 +25,7 @@
   ignore_errors: yes
   no_log: false
   when:
-    - scale_gui_ldap_secure.keystore is not defined
+    - scale_gui_ldap.securekeystore is not defined
     - " 'EFSSG0100I' in scale_gui_conf_lsldap.stdout "
 
 - name: LDAP | Secure LDAP Integrate GUI #TODO Not tested
@@ -37,7 +37,7 @@
   ignore_errors: yes
   #no_log: true
   when:
-    - scale_gui_ldap_secure.keystore is defined
+    - scale_gui_ldap.securekeystore is defined
     - " 'EFSSG0100I' in scale_gui_conf_lsldap.stdout "
 
 #

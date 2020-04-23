@@ -30,7 +30,7 @@
   register: scale_gui_conf_createadmin
   failed_when: " 'EFSSG1000I' not in scale_gui_conf_createadmin.stdout"
   ignore_errors: yes
-  #no_log: true
+  no_log: true
   when:
     - scale_gui_admin_user is defined
     - " ( scale_gui_admin_user ) not in scale_gui_conf_gui_user_check.stdout"
@@ -44,7 +44,7 @@
   register: scale_gui_conf_create_gui_user
   failed_when: " 'EFSSG1000I' not in scale_gui_conf_create_gui_user.stdout"
   ignore_errors: yes
-  #no_log: true
+  no_log: true
   when:
     - scale_gui_user_username is defined
     - " ( scale_gui_user_username ) not in scale_gui_conf_gui_user_check.stdout"

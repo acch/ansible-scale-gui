@@ -11,6 +11,7 @@ galaxy_info:
     - name: EL
       versions:
         - 7
+        - 8
 
   galaxy_tags:
     - ibm
@@ -21,5 +22,4 @@ galaxy_info:
     - interface
     - gui
 
-dependencies:
-  - acch.spectrum_scale
+dependencies: []
